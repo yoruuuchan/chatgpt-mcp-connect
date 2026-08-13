@@ -1,7 +1,11 @@
 # chatgpt-mcp-connect
 一个很小但很实用的 Agent Skill：**专门告诉 Claude Code、Codex 等工程 Agent，如何把自定义 MCP 接入 ChatGPT。**
 
-OpenAI 已经支持 ChatGPT 自定义 MCP，但相关信息分散在 Developer Mode、MCP、认证、产品帮助等不同文档里。新开一个 Claude Code / Codex 会话时，Agent 经常会先花时间重新确认：
+这个 Skill 主要来自 **ChatGPT Plus 用户的实际使用场景**。
+
+问题并不是 ChatGPT 没有自定义 MCP 能力，而是 OpenAI 对 Plus 这一档的公开说明非常少。当前公开帮助文档对完整 MCP 的套餐说明主要集中在 Business / Enterprise / Edu，对 Pro 也只明确写了部分能力；Plus 缺少同样清晰、完整的接入说明。
+
+所以新开一个 Claude Code / Codex 会话时，Agent 很容易先怀疑“Plus 到底能不能接自定义 MCP”，然后重新查一遍文档和现有实现，才敢继续做。常见的重复确认包括：
 
 - ChatGPT 到底能不能接自定义 MCP？
 - 本地 MCP 怎么暴露给 ChatGPT？
@@ -40,7 +44,7 @@ ChatGPT
 
 ## 为什么要做这个 Skill
 
-因为这类任务很容易重复浪费时间。
+因为对 Plus 用户来说，这类任务特别容易重复浪费时间：功能入口和实际能力可能已经存在，但公开说明不足，Agent 在新会话里往往没有一个稳定的起点。
 
 理想情况：
 
