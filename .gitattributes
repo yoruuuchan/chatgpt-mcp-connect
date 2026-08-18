@@ -1,0 +1,3 @@
+* text=auto eol=lf
+*.vbs text eol=crlf
+*.ps1 text eol=crlf
