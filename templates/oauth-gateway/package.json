@@ -1,0 +1,17 @@
+{
+  "name": "chatgpt-mcp-oauth-gateway",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Minimal OAuth 2.1 gateway that makes a local Streamable HTTP MCP server connectable from ChatGPT",
+  "license": "MIT",
+  "type": "module",
+  "engines": {
+    "node": ">=22.19 <27"
+  },
+  "scripts": {
+    "start": "node gateway.mjs"
+  },
+  "dependencies": {
+    "@waishnav/devspace": "^1.0.5"
+  }
+}

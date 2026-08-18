@@ -1,0 +1,5 @@
+.env
+secrets/
+gateway-state/
+node_modules/
+package-lock.json
