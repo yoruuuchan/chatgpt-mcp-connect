@@ -1,197 +1,133 @@
 # chatgpt-mcp-connect
-一个很小但很实用的 Agent Skill：**专门告诉 Claude Code、Codex 等工程 Agent，如何把自定义 MCP 接入 ChatGPT。**
 
-这个 Skill 主要来自 **ChatGPT Plus 用户的实际使用场景**。
+**Reproducible recipes for connecting local and remote MCP servers to ChatGPT.**
 
-问题并不是 ChatGPT 没有自定义 MCP 能力，而是 OpenAI 对 Plus 这一档的公开说明非常少。当前公开帮助文档对完整 MCP 的套餐说明主要集中在 Business / Enterprise / Edu，对 Pro 也只明确写了部分能力；Plus 缺少同样清晰、完整的接入说明。
+Your MCP server already works in Claude Code or Cursor. ChatGPT can't see it. This repo is the last mile — seven paths that were actually built, run, and verified end to end, written down so you don't spend an afternoon rediscovering them.
 
-所以新开一个 Claude Code / Codex 会话时，Agent 很容易先怀疑“Plus 到底能不能接自定义 MCP”，然后重新查一遍文档和现有实现，才敢继续做。常见的重复确认包括：
+[中文说明](./README.zh-CN.md) · [Architecture](./docs/architecture.md) · [Security](./docs/security.md) · [Troubleshooting](./docs/troubleshooting.md)
 
-- ChatGPT 到底能不能接自定义 MCP？
-- 本地 MCP 怎么暴露给 ChatGPT？
-- 要不要做 Remote MCP？
-- OAuth 怎么接？
-- Cloudflare Tunnel 能不能用？
+---
 
-这套 Skill 的目的就是把这些已经确认过的基础事实固定下来，让 Agent **直接从实现开始，而不是每次从头考古。**
+## Why this exists
 
-## 它做什么
+ChatGPT will not talk to your MCP server unless **all four** of these are true at once:
 
-默认接入思路：
+| It needs | Most MCP servers ship with |
+|---|---|
+| A public HTTPS URL | `127.0.0.1` |
+| Streamable HTTP transport | stdio |
+| OAuth 2.1 with dynamic client registration and PKCE | no auth, or a static API key |
+| A tool count it will accept | however many tools the author wrote |
 
-```text
-现有 MCP
-  ↓
-Remote MCP / Streamable HTTP
-  ↓
-OAuth 2.1
-  ↓
-Cloudflare Tunnel 或已有公网 HTTPS Endpoint
-  ↓
-ChatGPT
-  ↓
-真实工具调用验收
-```
+Nothing in the MCP ecosystem hands you those four. Every guide stops at "your server works locally", and the gap between that and a working ChatGPT connector is where the afternoon goes. The protocol is documented; the assembly is not.
 
-它主要覆盖：
+So this is the assembly: which piece goes where, what breaks, and how to tell which layer broke.
 
-- 判断现有 MCP 怎么接给 ChatGPT
-- 把本地 / 私有 MCP 变成 ChatGPT 可访问的 Remote MCP
-- 本地 HTTP MCP 优先通过 Cloudflare Tunnel 暴露
-- 配置 OAuth 2.1
-- 在 ChatGPT 中完成自定义 MCP 接入
-- 最后用真实 tool call 验收，而不是“部署成功就算完成”
-
-## 为什么要做这个 Skill
-
-因为对 Plus 用户来说，这类任务特别容易重复浪费时间：功能入口和实际能力可能已经存在，但公开说明不足，Agent 在新会话里往往没有一个稳定的起点。
-
-理想情况：
-
-```text
-用户：把这个 MCP 接给 GPT
-
-Agent：
-读取 chatgpt-mcp-connect
-  ↓
-检查现有 MCP
-  ↓
-配置 Remote MCP / Cloudflare / OAuth
-  ↓
-接入 ChatGPT
-  ↓
-真实调用验收
-```
-
-而不是：
-
-```text
-用户：把这个 MCP 接给 GPT
-
-Agent：
-“ChatGPT 支持 MCP 吗？”
-  ↓
-查文档
-  ↓
-“现在叫 Connector 还是 App？”
-  ↓
-继续查
-  ↓
-“OAuth 有什么要求？”
-  ↓
-继续查
-  ↓
-半天过去了
-```
-
-这个仓库就是给 Agent 一个固定起点。
-
-## 安装
-
-### Codex
-
-把仓库放到：
-
-```text
-~/.agents/skills/chatgpt-mcp-connect
-```
-
-Windows 通常是：
-
-```text
-%USERPROFILE%\.agents\skills\chatgpt-mcp-connect
-```
-
-例如：
+## Start here
 
 ```bash
-git clone https://github.com/yoruuuchan/chatgpt-mcp-connect.git ~/.agents/skills/chatgpt-mcp-connect
+git clone https://github.com/yoruuuchan/chatgpt-mcp-connect.git
+cd chatgpt-mcp-connect
 ```
 
-### Claude Code
+**1. Find your row.** Answer two questions about the MCP server you want to connect:
 
-把仓库放到：
+| Does it speak HTTP? | Does it have OAuth? | Go to |
+|---|---|---|
+| yes | no | [`templates/oauth-gateway`](./templates/oauth-gateway/) — put OAuth in front of it |
+| no (stdio only) | no | [`recipes/blender`](./recipes/blender/) — add a bridge first, then the gateway |
+| yes | yes | [`recipes/devspace`](./recipes/devspace/) — you only need to expose it |
+| I don't know | | [`docs/architecture.md`](./docs/architecture.md) |
 
-```text
-~/.claude/skills/chatgpt-mcp-connect
-```
+**2. Follow the closest recipe.** Even if your MCP server isn't one of the seven, one of them has your shape.
 
-Windows 通常是：
-
-```text
-%USERPROFILE%\.claude\skills\chatgpt-mcp-connect
-```
-
-例如：
+**3. Check your work before touching ChatGPT.**
 
 ```bash
-git clone https://github.com/yoruuuchan/chatgpt-mcp-connect.git ~/.claude/skills/chatgpt-mcp-connect
+node scripts/doctor.mjs --url https://mcp.example.com --upstream 127.0.0.1:8770 --gateway 127.0.0.1:8771
 ```
 
-## 推荐：加一条全局触发规则
+It probes each hop in order and names the first one that's broken, instead of leaving you to guess from a blank ChatGPT error.
 
-只靠 Skill 自动发现，有时新会话未必会主动加载。
-
-所以建议再在全局指令里加一句：
-
-```md
-当任务涉及把自定义 MCP 接入 ChatGPT / GPT 时，必须先读取并遵循用户级 Skill `chatgpt-mcp-connect`。
+```
+[  ok  ] 1. MCP server            127.0.0.1:8770 accepting connections
+[ FAIL ] 2. OAuth gateway         gateway is up and reports upstream unreachable (HTTP 503)
+         The gateway itself is fine — what sits behind it is down.
 ```
 
-Codex 放到全局 `AGENTS.md`。
+## Recipes
 
-Claude Code 放到全局 `CLAUDE.md`。
+Each was built and verified on real hardware. Each records what was tested, what wasn't, and when.
 
-这样以后新会话里只要说：
+| Recipe | What it connects | Transport | Auth pattern | Exposure |
+|---|---|---|---|---|
+| [davinci-resolve](./recipes/davinci-resolve/) | DaVinci Resolve Studio — timelines, media, colour, render | HTTP native | local gateway | Cloudflare Tunnel |
+| [windows-desktop](./recipes/windows-desktop/) | Windows GUI automation, with the dangerous tools switched off | HTTP native | local gateway | Cloudflare Tunnel |
+| [blender](./recipes/blender/) | Blender scene graph and Python | stdio → bridge → addon socket | local gateway | Cloudflare Tunnel |
+| [comfyui](./recipes/comfyui/) | ComfyUI workflows and generation | HTTP native | **Cloudflare Worker** | Worker + Tunnel |
+| [kimi-computer-use](./recipes/kimi-computer-use/) | Desktop computer-use agent | stdio → bridge | **Cloudflare Access, zero code** | Cloudflare Tunnel |
+| [devspace](./recipes/devspace/) | Local coding workspace — files, search, shell | HTTP native | built in | **Tailscale Funnel** |
+| [webcodex](./recipes/webcodex/) | Project tools + console, in Docker on WSL | HTTP native | built in | Tunnel, local YAML |
 
-> 把这个 MCP 接给 GPT。
+The variety is the point. Between them they cover **four ways to do OAuth** — from writing nothing at all to running your own gateway — and **three ways to get a public hostname**, with the tradeoffs written down. Read [`docs/architecture.md`](./docs/architecture.md) to pick, or [`recipes/`](./recipes/) for the full comparison.
 
-Agent 就应该先读取这个 Skill，再开始实现。
+## What's in here
 
-## 仓库结构
-
-```text
-chatgpt-mcp-connect/
-├─ SKILL.md
-├─ README.md
-├─ LICENSE
-└─ examples/
-   ├─ cloudflare-tunnel.md
-   └─ oauth.md
+```
+recipes/     seven verified end-to-end paths
+templates/   oauth-gateway/  — OAuth 2.1 in front of any HTTP MCP server
+             supervisor/     — keep the processes alive across reboots
+scripts/     doctor.mjs      — layered connectivity check, no dependencies
+docs/        architecture · security · troubleshooting
+SKILL.md     agent skill: point Claude Code or Codex at this repo
 ```
 
-- [`SKILL.md`](./SKILL.md)：Agent 真正读取和执行的流程
-- [`examples/cloudflare-tunnel.md`](./examples/cloudflare-tunnel.md)：本地 / 私有 MCP 使用 Cloudflare Tunnel 的接法
-- [`examples/oauth.md`](./examples/oauth.md)：OAuth 2.1 接入参考
+The two pieces people are usually missing are [`templates/oauth-gateway`](./templates/oauth-gateway/) — about 230 lines of Node that turns a plain HTTP MCP server into one ChatGPT can authenticate against — and [`docs/troubleshooting.md`](./docs/troubleshooting.md), which is the list of real failures rather than a list of things that might go wrong. The one that cost the most to find: **every auth failure returning HTTP 500 instead of 401**, from two unrelated causes that produce an identical symptom.
 
-## 设计原则
+## Use it as an agent skill
 
-这不是一份 OpenAI 官方文档的静态备份。
+The repo doubles as a skill for coding agents, so a fresh session starts from the architecture instead of re-researching whether ChatGPT supports MCP at all.
 
-Skill 只保存相对稳定的工程路径：
-
-```text
-ChatGPT
-  ↕
-Remote MCP
-  ↕
-OAuth
-  ↕
-实际 MCP Server
+```bash
+git clone https://github.com/yoruuuchan/chatgpt-mcp-connect.git ~/.claude/skills/chatgpt-mcp-connect   # Claude Code
+git clone https://github.com/yoruuuchan/chatgpt-mcp-connect.git ~/.agents/skills/chatgpt-mcp-connect   # Codex
 ```
 
-像下面这些变化比较快的内容：
+Then add one line to your global `CLAUDE.md` or `AGENTS.md`:
 
-- ChatGPT 当前 UI 在哪里添加 MCP
-- Developer Mode 的具体入口
-- 套餐开放范围
-- OAuth 元数据的最新要求
-- OpenAI 产品命名变化
+> When a task involves connecting a custom MCP to ChatGPT, read and follow the `chatgpt-mcp-connect` skill first.
 
-Agent 在真正执行任务时再查看最新官方文档。
+## Scope
 
-这样既不会每次从零开始，也不会因为仓库里写死旧 UI 而被过时信息坑到。
+**This gives you** a working, authenticated, public MCP endpoint that survives a reboot, and a way to tell which layer is broken when it isn't working.
+
+**This is not** an MCP framework, a proxy to install, a hosted service, or a sandbox. It doesn't fork or wrap any upstream MCP server — every recipe points at the real project and tells you how to configure it. And it does not constrain what an authenticated caller can do; read [`docs/security.md`](./docs/security.md) before you expose anything, especially the part about turning off the tools you don't need.
+
+**Verified 2026-08-18** on Windows 11 + WSL2, with tunnels through Cloudflare and Tailscale. Each recipe states what was live-checked on that date and what wasn't — where an application wasn't running at verification time, the recipe says so rather than implying more coverage than it has.
+
+## Attribution
+
+Every MCP server here belongs to someone else. This repo links to them; it copies nothing and forks nothing.
+
+| Project | License | Used for |
+|---|---|---|
+| [samuelgursky/davinci-resolve-mcp](https://github.com/samuelgursky/davinci-resolve-mcp) | MIT | DaVinci Resolve |
+| [CursorTouch/Windows-MCP](https://github.com/CursorTouch/Windows-MCP) | MIT | Windows desktop |
+| [ahujasid/blender-mcp](https://github.com/ahujasid/blender-mcp) | MIT | Blender |
+| [artokun/comfyui-mcp](https://github.com/artokun/comfyui-mcp) | MIT | ComfyUI |
+| [Waishnav/devspace](https://github.com/Waishnav/devspace) | MIT | DevSpace, and `SingleUserOAuthProvider` used by the gateway template |
+| [yyjeqhc/webcodex](https://github.com/yyjeqhc/webcodex) | Apache-2.0 | WebCodex |
+| [punkpeye/mcp-proxy](https://github.com/punkpeye/mcp-proxy) | MIT | stdio → Streamable HTTP bridge |
+| [modelcontextprotocol/typescript-sdk](https://github.com/modelcontextprotocol/typescript-sdk) | Apache-2.0 / MIT / CC-BY-4.0 | OAuth router and bearer validation |
+| [cloudflare/workers-oauth-provider](https://github.com/cloudflare/workers-oauth-provider) | MIT | edge OAuth in the ComfyUI recipe |
+| Moonshot Kimi CU | proprietary, no public terms found | computer-use recipe — link only, nothing redistributed |
+
+None of these projects endorse or maintain these recipes. Bugs in a recipe are this repo's problem; take upstream bugs upstream.
+
+## Contributing
+
+A new recipe is welcome if you actually ran it. Follow the structure of an existing one, state your tested environment and date, and mark anything you couldn't verify as unverified rather than filling it in. Corrections to a recipe that has drifted are just as useful — these depend on upstream projects that move fast.
 
 ## License
 
-MIT
+MIT — see [LICENSE](./LICENSE). Upstream projects keep their own licenses.

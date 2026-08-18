@@ -1,190 +1,101 @@
 ---
 name: chatgpt-mcp-connect
-description: Connect a custom MCP server to ChatGPT/GPT. Use when the user asks whether an MCP can be used by ChatGPT, or asks to expose, deploy, authenticate, configure, or connect a custom MCP for ChatGPT. Covers Remote MCP, Cloudflare Tunnel, OAuth 2.1, and real ChatGPT verification.
+description: Connect a custom MCP server to ChatGPT. Use when the user asks whether an MCP can be used by ChatGPT, or asks to expose, deploy, authenticate, configure, or connect a custom MCP for ChatGPT. Covers Streamable HTTP, stdio bridging, OAuth 2.1, Cloudflare Tunnel, Tailscale Funnel, and real verification inside ChatGPT.
 ---
 
 # chatgpt-mcp-connect
 
 Use this skill when the target client is **ChatGPT**.
 
-The goal is to make an existing or new MCP server reachable, authenticated, discoverable, and actually callable from ChatGPT.
+## Start from here, not from first principles
 
-## Known starting point
+ChatGPT can use custom remote MCP servers. Do not spend the task rediscovering that, and do not re-research the basic architecture. It requires four things at once:
 
-ChatGPT can use custom remote MCP servers. Do not spend the task rediscovering that capability.
-
-The usual architecture is:
-
-```text
-ChatGPT
-  ↓
-HTTPS Remote MCP endpoint
-  ↓
-OAuth 2.1
-  ↓
-MCP server
+```
+public HTTPS URL  +  Streamable HTTP  +  OAuth 2.1 (DCR + PKCE)  +  a tool count it accepts
 ```
 
-For a local or private MCP, the default practical path is:
+Everything you do is to satisfy those four. Read [`docs/architecture.md`](./docs/architecture.md) in this repo for the full map.
 
-```text
-ChatGPT
-  ↓
-https://mcp.example.com/mcp
-  ↓
-OAuth 2.1
-  ↓
-Cloudflare Tunnel
-  ↓
-local Remote MCP / Streamable HTTP server
-```
+## Decide before you build
 
-If the server already has a stable public HTTPS Remote MCP endpoint, use it directly and skip the tunnel.
+Answer two questions about the user's MCP server, then follow the matching recipe in [`recipes/`](./recipes/):
+
+| Speaks HTTP? | Has OAuth? | Do this |
+|---|---|---|
+| yes | no | Deploy [`templates/oauth-gateway`](./templates/oauth-gateway/) in front of it |
+| no (stdio) | no | Add `mcp-proxy` first, then the gateway — see [`recipes/blender`](./recipes/blender/) |
+| yes | yes | Expose it only — see [`recipes/devspace`](./recipes/devspace/) |
+
+Then pick an exposure: Cloudflare Tunnel (token mode is fastest), Cloudflare Tunnel with local YAML (headless/WSL/systemd), or Tailscale Funnel (no domain needed).
+
+Reuse whatever the user already has — an existing Cloudflare account, domain, tunnel, or identity provider — before creating anything new.
 
 ## Workflow
 
-### 1. Inspect the MCP
+1. **Inspect the MCP server first.** Project path, runtime device, startup command, transport, local endpoint, existing auth. Confirm `initialize`, `tools/list`, and one representative `tools/call` work locally. Do not start integration work on a server that isn't working yet.
 
-Establish the current state:
+2. **Get it onto Streamable HTTP.** Use the server's own HTTP flag if it has one, binding to `127.0.0.1`. If it's stdio-only, put `mcp-proxy` in front:
+   ```bash
+   npx --yes mcp-proxy@6.7.0 --host 127.0.0.1 --port 9877 --server stream -- <stdio command>
+   ```
+   A tunnel does not convert stdio to HTTP. The bridge is a separate mandatory layer.
 
-```text
-project / repository
-runtime device
-startup command
-MCP framework / SDK
-transport
-local endpoint
-existing authentication
-tools/list result
-representative tools/call result
+3. **Add OAuth 2.1.** Prefer, in order: the server's built-in OAuth → Cloudflare Access managed OAuth (zero code) → a Cloudflare Worker → [`templates/oauth-gateway`](./templates/oauth-gateway/). Verify the server publishes protected-resource metadata at the **path-suffixed** URL (`/.well-known/oauth-protected-resource/mcp`), authorization-server metadata with `registration_endpoint` and PKCE `S256`, and returns **401** — not 500 — for an unauthenticated request.
+
+4. **Expose it** on a stable HTTPS hostname, origin `http://127.0.0.1:<port>`.
+
+5. **Check every layer before touching ChatGPT:**
+   ```bash
+   node scripts/doctor.mjs --url https://<host> --upstream 127.0.0.1:<mcp> --gateway 127.0.0.1:<gw>
+   ```
+   Fix the first failing layer before looking at anything below it.
+
+6. **Connect it in ChatGPT** and complete the OAuth flow. The UI path and the plan availability change often — check current OpenAI documentation rather than remembered menu names.
+
+7. **Make it survive a reboot.** A connector that dies at logout isn't done. See [`templates/supervisor`](./templates/supervisor/). GUI-dependent servers need an interactive desktop session, so trigger at logon, not "whether user is logged on or not".
+
+## Acceptance
+
+Not done until, inside ChatGPT:
+
+```
+tools are discovered
+OAuth completes
+one read-only tool call succeeds
+one representative real tool call succeeds and returns correct data
+failures return explicit, diagnosable errors
 ```
 
-The MCP itself should work before ChatGPT integration begins.
+A green tunnel, a healthy `/healthz`, or a successful `tools/list` from curl is not acceptance. Report honestly if the last step was not reached.
 
-### 2. Provide a Remote MCP endpoint
+## When something breaks
 
-ChatGPT needs a network-reachable Remote MCP endpoint.
+[`docs/troubleshooting.md`](./docs/troubleshooting.md) has the real failures. The two worth knowing before you start, because they waste the most time:
 
-Prefer Streamable HTTP for new work.
+- **Auth failures return 500 instead of 401.** Two unrelated causes, identical symptom: two copies of `@modelcontextprotocol/sdk` loaded (CJS + ESM, so `instanceof` never matches), or `trust proxy` set to `true` instead of `'loopback'`. Check both.
+- **Too many tools.** Large tool sets get rejected or truncated. Expose fewer, or use a server with compound tools.
 
-If the existing server is stdio-only, expose the same tool implementation through a Remote MCP / Streamable HTTP entry point before placing Cloudflare Tunnel in front of it. Cloudflare Tunnel forwards network services; it does not turn stdio into HTTP by itself.
+## Security
 
-Keep the existing tool schemas and business logic unless a protocol change actually requires modification.
+Read [`docs/security.md`](./docs/security.md) before exposing anything. Several of these servers give an authenticated caller arbitrary code execution. Turn off tools the user doesn't need, scope filesystem roots to actual project directories, bind local ports to loopback, and tell the user plainly what the blast radius is — do not expose a write-capable or code-executing MCP without saying so first.
 
-### 3. Expose local/private MCP with Cloudflare Tunnel
-
-For a server such as:
-
-```text
-http://127.0.0.1:8787/mcp
-```
-
-create a stable HTTPS hostname such as:
-
-```text
-https://mcp.example.com/mcp
-```
-
-and route it through Cloudflare Tunnel to the local MCP service.
-
-Record:
-
-```text
-tunnel name / id
-public hostname
-local target
-MCP path
-```
-
-Reuse existing Cloudflare accounts, domains, tunnels, CLI configuration, and authentication when available.
-
-See `examples/cloudflare-tunnel.md`.
-
-### 4. Add OAuth 2.1
-
-Private data and write-capable MCPs should normally use OAuth 2.1.
-
-Implement or reuse an authorization server that provides the metadata and endpoints required by the current MCP authorization specification and by ChatGPT.
-
-At minimum verify:
-
-```text
-protected-resource metadata
-authorization-server metadata
-authorization endpoint
-token endpoint
-Bearer token validation
-invalid / expired token behavior
-```
-
-Prefer an existing identity provider or existing application auth stack over building a new identity system only for MCP.
-
-See `examples/oauth.md`.
-
-### 5. Connect it to ChatGPT
-
-Use the current ChatGPT custom MCP / app / developer-mode connection flow and supply the HTTPS MCP endpoint.
-
-If OAuth is enabled, complete the authorization flow and then rescan or reconnect as required by the current product UI.
-
-The exact UI path changes more often than the protocol. If it is unclear, check the latest official OpenAI documentation instead of relying on remembered menu names.
-
-### 6. Verify in the real client
-
-Completion requires real ChatGPT verification:
-
-```text
-ChatGPT can discover the MCP tools
-OAuth completes successfully
-one read-only tool succeeds
-one representative real tool succeeds
-returned data is correct
-errors are explicit and diagnosable
-```
-
-Deployment, a green tunnel, or a successful `tools/list` outside ChatGPT is not final acceptance by itself.
-
-## Output for handoff
-
-Leave a compact record:
+## Handoff record
 
 ```yaml
 name:
-project:
 runtime_device:
-
-local_mcp:
-  transport:
-  endpoint:
-  command:
-
-remote_mcp:
-  url:
-
-cloudflare:
-  tunnel:
-  hostname:
-
-auth:
-  type: oauth2.1
-  provider:
-
-chatgpt_verification:
-  tools_discovered:
-  read_test:
-  representative_test:
-  result:
+local_mcp: { transport:, endpoint:, command: }
+bridge:    { needed:, tool:, port: }
+public_mcp_url:
+exposure:  { type:, hostname: }
+auth:      { pattern:, scope: }
+supervision:
+chatgpt:   { tools_discovered:, read_test:, representative_test: }
+result:
+not_verified:
 ```
 
-## Freshness rule
+## Freshness
 
-Treat these as fast-changing and verify them from current official documentation when relevant:
-
-- ChatGPT UI paths
-- plan / workspace availability
-- current developer-mode setup
-- exact OpenAI product terminology
-- current OAuth metadata requirements
-- current MCP protocol details
-
-Do not re-research the basic architectural fact that the task is to connect a custom Remote MCP to ChatGPT; start from the workflow above and only verify the details that can actually change.
+Verify from current official sources at implementation time: ChatGPT's UI path and current product naming, plan availability, ChatGPT's OAuth redirect URIs, the practical tool-count ceiling, and current MCP authorization spec details. The architecture above has been stable; the product surface on top of it has not.
