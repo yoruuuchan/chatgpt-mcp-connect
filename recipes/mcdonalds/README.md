@@ -33,6 +33,8 @@ The Worker expects one Cloudflare secret:
 
 The OAuth approval passphrase is deterministically derived from that token with SHA-256 and a domain-separated label. The McDonald's token itself is never submitted through the approval form, and no second secret needs to be stored or rotated. The token belongs only in Cloudflare Secrets, never Git or `wrangler.jsonc`.
 
+When the Worker's approval page asks for `Approval passphrase`, **do not paste the McDonald's MCP token there**. Generate/use the derived approval value instead. The raw MCP token should never cross the browser-facing approval form.
+
 ## Deploy
 
 ```bash

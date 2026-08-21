@@ -73,6 +73,8 @@ The local gateway is the default recommendation because it works anywhere, has n
 
 There is one important exception to that default: if the upstream MCP is **already hosted on public HTTPS** and only lacks ChatGPT-compatible OAuth, do not route it through a workstation just to add auth. Put the OAuth facade at the edge and proxy directly to the hosted upstream. The [McDonald's recipe](../recipes/mcdonalds/) is the verified example: ChatGPT OAuth terminates on a Cloudflare Worker, which swaps the caller's OAuth bearer for the upstream's static Bearer token.
 
+**Topology rule: do not hairpin a hosted MCP through your workstation.** If the upstream is already public HTTPS, every local proxy, tunnel, keepalive process, and machine dependency you insert is another failure mode without adding reachability. Keep the path as short as the auth boundary allows.
+
 Whichever pattern you pick, it must end up serving:
 
 ```

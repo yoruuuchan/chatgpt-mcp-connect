@@ -179,6 +179,22 @@ Your supervisor stacked. Guard it with a named global mutex so a second instance
 
 ---
 
+## Development environment
+
+### `git push` fails in WSL even though GitHub is already logged in on Windows
+
+WSL Git and Windows Git do not necessarily share credential helpers. A failed HTTPS push from WSL does **not** prove the machine has no GitHub credentials, and it is not a reason to create another PAT immediately.
+
+If Windows Git is already authenticated through Git Credential Manager, reuse that credential context from WSL:
+
+```powershell
+powershell.exe -NoProfile -Command "Set-Location 'C:\path\to\repo'; git push origin main"
+```
+
+This was verified while publishing the McDonald's recipe: WSL Git had no usable GitHub HTTPS credential, while the same checkout pushed successfully through Windows Git. Treat the two Git environments as separate credential contexts before rotating or minting secrets.
+
+---
+
 ## Things that change under you
 
 Re-verify these at implementation time rather than trusting any document, including this one:
@@ -189,4 +205,4 @@ Re-verify these at implementation time rather than trusting any document, includ
 - The practical tool-count ceiling
 - MCP authorization spec details
 
-The architecture — public HTTPS, Streamable HTTP, OAuth 2.1, a tunnel — has been stable. The product surface on top of it has not.
+The core requirements — public HTTPS, Streamable HTTP, and OAuth 2.1 — have been stable. The exposure layer may be a tunnel, Funnel, or pure edge Worker depending on where the upstream actually runs. The product surface on top of it has not.

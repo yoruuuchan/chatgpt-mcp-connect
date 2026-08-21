@@ -59,6 +59,12 @@ Know your own inventory. For a typical local-gateway deployment:
 
 None of these belong in git. Every template here ships a `.gitignore` that excludes `.env`, `secrets/`, `gateway-state/` and logs; keep it that way.
 
+### Keep approval credentials separate from upstream credentials
+
+A browser-facing OAuth approval form should never ask you to paste the upstream API/Bearer token itself. For a single-user Worker facade, one practical pattern is to derive a separate approval passphrase from a **high-entropy** upstream token with a domain-separated one-way hash, while keeping the raw upstream token only in the Worker secret store. The [McDonald's recipe](../recipes/mcdonalds/) uses this pattern.
+
+The derived passphrase is still an authorization secret — leaking it can let someone approve a new OAuth client — but it does not reveal the upstream token. If the upstream credential is human-chosen or otherwise low entropy, do **not** derive from it; generate and store an independent approval secret instead.
+
 To rotate: replace the owner token file and restart the gateway. Existing ChatGPT sessions keep working until their refresh tokens expire — delete the state database as well if you need them cut off immediately.
 
 ## Before you publish a repo of your own
