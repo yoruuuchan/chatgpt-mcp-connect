@@ -1,6 +1,6 @@
 ---
 name: chatgpt-mcp-connect
-description: Connect a custom MCP server to ChatGPT. Use when the user asks whether an MCP can be used by ChatGPT, or asks to expose, deploy, authenticate, configure, or connect a custom MCP for ChatGPT. Covers Streamable HTTP, stdio bridging, OAuth 2.1, Cloudflare Tunnel, Tailscale Funnel, and real verification inside ChatGPT.
+description: Connect a custom MCP server to ChatGPT. Use when the user asks whether an MCP can be used by ChatGPT, or asks to expose, deploy, authenticate, configure, or connect a custom MCP for ChatGPT. Covers hosted and local Streamable HTTP, stdio bridging, OAuth 2.1, Cloudflare Workers/Tunnel, Tailscale Funnel, and real verification inside ChatGPT.
 ---
 
 # chatgpt-mcp-connect
@@ -27,7 +27,9 @@ Answer two questions about the user's MCP server, then follow the matching recip
 | no (stdio) | no | Add `mcp-proxy` first, then the gateway — see [`recipes/blender`](./recipes/blender/) |
 | yes | yes | Expose it only — see [`recipes/devspace`](./recipes/devspace/) |
 
-Then pick an exposure: Cloudflare Tunnel (token mode is fastest), Cloudflare Tunnel with local YAML (headless/WSL/systemd), or Tailscale Funnel (no domain needed).
+If it already speaks Streamable HTTP on a **public hosted HTTPS endpoint** but only has static Bearer/API-key auth, use the [`mcdonalds`](./recipes/mcdonalds/) pattern instead of tunneling it through a workstation: terminate ChatGPT OAuth in a Cloudflare Worker and proxy directly to the hosted upstream.
+
+Then pick an exposure: Cloudflare Tunnel (token mode is fastest), Cloudflare Tunnel with local YAML (headless/WSL/systemd), Tailscale Funnel (no domain needed), or a pure Cloudflare Worker custom domain when the upstream is already public.
 
 Reuse whatever the user already has — an existing Cloudflare account, domain, tunnel, or identity provider — before creating anything new.
 
@@ -41,9 +43,9 @@ Reuse whatever the user already has — an existing Cloudflare account, domain, 
    ```
    A tunnel does not convert stdio to HTTP. The bridge is a separate mandatory layer.
 
-3. **Add OAuth 2.1.** Prefer, in order: the server's built-in OAuth → Cloudflare Access managed OAuth (zero code) → a Cloudflare Worker → [`templates/oauth-gateway`](./templates/oauth-gateway/). Verify the server publishes protected-resource metadata at the **path-suffixed** URL (`/.well-known/oauth-protected-resource/mcp`), authorization-server metadata with `registration_endpoint` and PKCE `S256`, and returns **401** — not 500 — for an unauthenticated request.
+3. **Add OAuth 2.1.** Prefer, in order: the server's built-in OAuth → Cloudflare Access managed OAuth (zero code) → a Cloudflare Worker → [`templates/oauth-gateway`](./templates/oauth-gateway/). For an already-hosted public MCP with static upstream auth, prefer the Worker pattern because it removes the tunnel and workstation from the request path. Verify the server publishes protected-resource metadata at the **path-suffixed** URL (`/.well-known/oauth-protected-resource/mcp`), authorization-server metadata with `registration_endpoint` and PKCE `S256`, and returns **401** — not 500 — for an unauthenticated request.
 
-4. **Expose it** on a stable HTTPS hostname, origin `http://127.0.0.1:<port>`.
+4. **Expose it** on a stable HTTPS hostname. For a local MCP, keep the origin on `http://127.0.0.1:<port>` and expose only through the chosen ingress. For an already-hosted MCP behind a Worker facade, proxy directly to the public upstream instead.
 
 5. **Check every layer before touching ChatGPT:**
    ```bash
@@ -53,7 +55,7 @@ Reuse whatever the user already has — an existing Cloudflare account, domain, 
 
 6. **Connect it in ChatGPT** and complete the OAuth flow. The UI path and the plan availability change often — check current OpenAI documentation rather than remembered menu names.
 
-7. **Make it survive a reboot.** A connector that dies at logout isn't done. See [`templates/supervisor`](./templates/supervisor/). GUI-dependent servers need an interactive desktop session, so trigger at logon, not "whether user is logged on or not".
+7. **Make every runtime dependency durable.** For local MCPs, a connector that dies at logout isn't done: see [`templates/supervisor`](./templates/supervisor/). GUI-dependent servers need an interactive desktop session, so trigger at logon, not "whether user is logged on or not". A pure hosted-MCP + Worker path has no workstation process to supervise.
 
 ## Acceptance
 

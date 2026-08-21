@@ -1,6 +1,6 @@
 # Recipes
 
-Seven paths that were actually built and run. Pick the one whose *shape* matches yours — the specific application matters much less than whether your server speaks HTTP and where you want OAuth to happen.
+Nine paths that were actually built and run. Pick the one whose *shape* matches yours — the specific application matters much less than whether your server speaks HTTP, whether it is already hosted publicly, and where OAuth should happen.
 
 ## Pick by shape
 
@@ -10,6 +10,7 @@ Seven paths that were actually built and run. Pick the one whose *shape* matches
 | is stdio only | [blender](./blender/) or [kimi-computer-use](./kimi-computer-use/) — both add a bridge first |
 | already has its own OAuth | [devspace](./devspace/) or [webcodex](./webcodex/) — you only need to expose it |
 | should stay reachable while the workstation sleeps | [comfyui](./comfyui/) — OAuth at the edge, in a Worker |
+| is already hosted on public HTTPS but only has static Bearer/API-key auth | [mcdonalds](./mcdonalds/) — OAuth facade at the edge, no workstation or Tunnel |
 | is on a machine with no domain and no Cloudflare account | [devspace](./devspace/) — Tailscale Funnel |
 | runs in Docker inside WSL | [webcodex](./webcodex/) — tunnel as a systemd unit, plus the WSL keepalive trap |
 | has dangerous tools you'd rather not expose | [windows-desktop](./windows-desktop/) — tool exclusion as a first-class step |
@@ -22,6 +23,8 @@ Seven paths that were actually built and run. Pick the one whose *shape* matches
 | [windows-desktop](./windows-desktop/) | [CursorTouch/Windows-MCP](https://github.com/CursorTouch/Windows-MCP) | MIT | HTTP native | — | local gateway | CF Tunnel, token |
 | [blender](./blender/) | [ahujasid/blender-mcp](https://github.com/ahujasid/blender-mcp) | MIT | stdio | mcp-proxy | local gateway | CF Tunnel, token |
 | [comfyui](./comfyui/) | [artokun/comfyui-mcp](https://github.com/artokun/comfyui-mcp) | MIT | HTTP native | — | CF Worker | Worker + Tunnel |
+| [mcdonalds](./mcdonalds/) | [McDonald's China MCP](https://open.mcd.cn/mcp/doc) | proprietary hosted service | hosted Streamable HTTP | — | CF Worker OAuth facade | Worker custom domain |
+| [unreal-engine](./unreal-engine/) | Unreal MCP (`ModelContextProtocol`, UE 5.8) | UE EULA | HTTP native | — | local gateway | CF Tunnel, token |
 | [kimi-computer-use](./kimi-computer-use/) | Moonshot Kimi CU | proprietary | stdio | mcp-proxy | CF Access managed | CF Tunnel, token |
 | [devspace](./devspace/) | [Waishnav/devspace](https://github.com/Waishnav/devspace) | MIT | HTTP native | — | built in | Tailscale Funnel |
 | [webcodex](./webcodex/) | [yyjeqhc/webcodex](https://github.com/yyjeqhc/webcodex) | Apache-2.0 | HTTP native | — | built in | CF Tunnel, local YAML |
@@ -34,9 +37,9 @@ Ordered by how much code you end up maintaining.
 
 **Cloudflare Access managed OAuth** — a Zero Trust application of type `mcp`. Cloudflare runs the whole flow; you write zero code and the tunnel validates the JWT. Best choice if you're already on Cloudflare and don't need a custom consent screen. Ties you to Cloudflare. See [kimi-computer-use](./kimi-computer-use/).
 
-**Cloudflare Worker** — your own Worker with `@cloudflare/workers-oauth-provider`, state in KV. More work than Access, less than a gateway, and the auth layer stays up independently of your workstation. Costs a second hostname. See [comfyui](./comfyui/).
+**Cloudflare Worker** — your own Worker with `@cloudflare/workers-oauth-provider`, state in KV. More work than Access, less than a gateway, and the auth layer stays up independently of your workstation. For a local upstream, the Worker can sit in front of a tunnel as in [comfyui](./comfyui/); for an already-hosted upstream, it can proxy directly with no tunnel at all as in [mcdonalds](./mcdonalds/).
 
-**Local gateway** — [`templates/oauth-gateway`](../templates/oauth-gateway/), a Node process on the same machine. Works anywhere, no cloud dependency beyond the tunnel, small enough to read end to end. This is the default recommendation, and it's what three of the seven use.
+**Local gateway** — [`templates/oauth-gateway`](../templates/oauth-gateway/), a Node process on the same machine. Works anywhere, no cloud dependency beyond the tunnel, small enough to read end to end. This is the default recommendation for local upstreams, and four of the nine recipes use it.
 
 ## Choosing an exposure pattern
 
@@ -46,7 +49,9 @@ Ordered by how much code you end up maintaining.
 
 **Tailscale Funnel** — `tailscale funnel <port>`. No domain, no DNS, no Cloudflare account. You don't get to choose the hostname, and access control is coarser.
 
-## Every recipe follows the same structure
+**Cloudflare Worker custom domain** — the Worker itself is the public MCP endpoint. No tunnel and no local origin. Use this when the upstream MCP is already hosted publicly and the missing piece is ChatGPT-compatible OAuth; see [mcdonalds](./mcdonalds/).
+
+## Every recipe follows roughly the same structure
 
 So you can skim across them:
 
@@ -63,6 +68,8 @@ So you can skim across them:
 11. Security notes
 12. Known limitations
 13. Attribution
+
+Local-only steps are omitted when they do not exist. The McDonald's recipe, for example, has no local-server startup, bridge, tunnel, or supervisor because the upstream is already a hosted HTTPS MCP.
 
 Each opens with a status line saying what was verified and when. Where an application wasn't running at verification time — ComfyUI and Blender were both stopped on 2026-08-18 — the recipe says so instead of implying end-to-end coverage it doesn't have.
 
