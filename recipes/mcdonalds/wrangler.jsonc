@@ -1,0 +1,26 @@
+{
+  "$schema": "./node_modules/wrangler/config-schema.json",
+  "name": "mcdonalds-mcp-chatgpt",
+  "main": "src/index.js",
+  "compatibility_date": "2026-08-21",
+  "compatibility_flags": ["nodejs_compat", "global_fetch_strictly_public"],
+  "workers_dev": false,
+  "routes": [
+    {
+      "pattern": "mcd-mcp.yoru-and-akari.dev",
+      "custom_domain": true
+    }
+  ],
+  "kv_namespaces": [
+    {
+      "binding": "OAUTH_KV",
+      "id": "3108944775d14b8bb4ce9dca70787ed0"
+    }
+  ],
+  "vars": {
+    "MCD_MCP_URL": "https://mcp.mcd.cn"
+  },
+  "observability": {
+    "enabled": true
+  }
+}
