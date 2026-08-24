@@ -1,12 +1,13 @@
 # Recipes
 
-Nine paths that were actually built and run. Pick the one whose *shape* matches yours — the specific application matters much less than whether your server speaks HTTP, whether it is already hosted publicly, and where OAuth should happen.
+Ten paths that were actually built and run. Pick the one whose *shape* matches yours — the specific application matters much less than whether your server speaks HTTP, whether it is already hosted publicly, where OAuth should happen, and whether ChatGPT should connect to the leaf server directly or to an MCP runtime in front of several capabilities.
 
 ## Pick by shape
 
 | If your MCP server… | Start from |
 |---|---|
-| already speaks Streamable HTTP, has no auth | [davinci-resolve](./davinci-resolve/) — the canonical path |
+| is really a **set of Workspaces, Skills, or upstream MCP servers** you want behind one connector | [mcpx](./mcpx/) — use an MCP runtime / aggregation layer |
+| already speaks Streamable HTTP, has no auth | [davinci-resolve](./davinci-resolve/) — the canonical direct path |
 | is stdio only | [blender](./blender/) or [kimi-computer-use](./kimi-computer-use/) — both add a bridge first |
 | already has its own OAuth | [devspace](./devspace/) or [webcodex](./webcodex/) — you only need to expose it |
 | should stay reachable while the workstation sleeps | [comfyui](./comfyui/) — OAuth at the edge, in a Worker |
@@ -28,18 +29,29 @@ Nine paths that were actually built and run. Pick the one whose *shape* matches 
 | [kimi-computer-use](./kimi-computer-use/) | Moonshot Kimi CU | proprietary | stdio | mcp-proxy | CF Access managed | CF Tunnel, token |
 | [devspace](./devspace/) | [Waishnav/devspace](https://github.com/Waishnav/devspace) | MIT | HTTP native | — | built in | Tailscale Funnel |
 | [webcodex](./webcodex/) | [yyjeqhc/webcodex](https://github.com/yyjeqhc/webcodex) | Apache-2.0 | HTTP native | — | built in | CF Tunnel, local YAML |
+| [mcpx](./mcpx/) | [opentokenz/mcpx](https://github.com/opentokenz/mcpx) | Apache-2.0 | HTTP native | — | built in | CF Tunnel; aggregates Workspaces / Skills / upstream MCPs |
+
+## Direct leaf server or runtime?
+
+The first decision is now architectural, not transport-level.
+
+**Direct leaf connection** — ChatGPT connects to one application-specific MCP. This is simpler when the server is already a good product boundary: DaVinci Resolve, Blender, Unreal Engine, a hosted API, and so on. The rest of this page tells you how to satisfy transport, auth, exposure, and supervision for that server.
+
+**Runtime / aggregation connection** — ChatGPT connects to one MCP runtime, and the runtime discovers or calls several capabilities behind it. The [MCPX recipe](./mcpx/) is the verified example. At the tested `v0.9.7`, MCPX kept a stable top-level tool surface while exposing local Skills and upstream MCP tools through `skill_tool` and `mcp_tool` on demand. That avoids creating a public OAuth/tunnel/connector chain for every leaf MCP and can keep very large combined tool inventories out of ChatGPT's top-level `tools/list`.
+
+Aggregation changes the failure model: `ChatGPT → MCPX` can be healthy while `MCPX → one upstream MCP` is broken. Diagnose those as separate layers.
 
 ## Choosing an auth pattern
 
 Ordered by how much code you end up maintaining.
 
-**Built in** — nothing to do. Check for it before building anything; DevSpace and WebCodex both ship OAuth and people miss it.
+**Built in** — nothing to do. Check for it before building anything; DevSpace, WebCodex, and MCPX all ship OAuth and people miss it.
 
 **Cloudflare Access managed OAuth** — a Zero Trust application of type `mcp`. Cloudflare runs the whole flow; you write zero code and the tunnel validates the JWT. Best choice if you're already on Cloudflare and don't need a custom consent screen. Ties you to Cloudflare. See [kimi-computer-use](./kimi-computer-use/).
 
 **Cloudflare Worker** — your own Worker with `@cloudflare/workers-oauth-provider`, state in KV. More work than Access, less than a gateway, and the auth layer stays up independently of your workstation. For a local upstream, the Worker can sit in front of a tunnel as in [comfyui](./comfyui/); for an already-hosted upstream, it can proxy directly with no tunnel at all as in [mcdonalds](./mcdonalds/).
 
-**Local gateway** — [`templates/oauth-gateway`](../templates/oauth-gateway/), a Node process on the same machine. Works anywhere, no cloud dependency beyond the tunnel, small enough to read end to end. This is the default recommendation for local upstreams, and four of the nine recipes use it.
+**Local gateway** — [`templates/oauth-gateway`](../templates/oauth-gateway/), a Node process on the same machine. Works anywhere, no cloud dependency beyond the tunnel, small enough to read end to end. This is the default recommendation for local upstreams that do not already ship OAuth.
 
 ## Choosing an exposure pattern
 
@@ -69,7 +81,7 @@ So you can skim across them:
 12. Known limitations
 13. Attribution
 
-Local-only steps are omitted when they do not exist. The McDonald's recipe, for example, has no local-server startup, bridge, tunnel, or supervisor because the upstream is already a hosted HTTPS MCP.
+Local-only steps are omitted when they do not exist. The McDonald's recipe, for example, has no local-server startup, bridge, tunnel, or supervisor because the upstream is already a hosted HTTPS MCP. The MCPX recipe adds one extra section for attaching upstream MCP servers and Skills behind the runtime.
 
 Each opens with a status line saying what was verified and when. Where an application wasn't running at verification time — ComfyUI and Blender were both stopped on 2026-08-18 — the recipe says so instead of implying end-to-end coverage it doesn't have.
 
