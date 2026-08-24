@@ -2,7 +2,7 @@
 
 **把本地和远程 MCP Server 接进 ChatGPT 的可复现配方。**
 
-你的 MCP 在 Claude Code 或 Cursor 里跑得好好的，ChatGPT 就是看不见它。这个仓库解决的就是这最后一公里——九条真正搭起来、跑通、验证过的路径，写下来，省得你再花一个下午重新踩一遍。
+你的 MCP 在 Claude Code 或 Cursor 里跑得好好的，ChatGPT 就是看不见它。这个仓库解决的就是这最后一公里——十条真正搭起来、跑通、验证过的路径，写下来，省得你再花一个下午重新踩一遍。
 
 [English](./README.md) · [架构](./docs/architecture.md) · [安全](./docs/security.md) · [排错](./docs/troubleshooting.md)
 
@@ -30,6 +30,8 @@ git clone https://github.com/yoruuuchan/chatgpt-mcp-connect.git
 cd chatgpt-mcp-connect
 ```
 
+**0. 先决定你是在暴露一个 MCP，还是一个 Runtime。** 如果你想让 ChatGPT 只连一个稳定入口，后面挂多个 Workspace、Skill 和上游 MCP，先看 [`recipes/mcpx`](./recipes/mcpx/)。MCPX 是聚合 / Runtime 路径；下面这张表处理的是把单个叶子 MCP 直接接进 ChatGPT。
+
 **1. 先对号入座。** 回答关于你那个 MCP 的两个问题：
 
 | 它说 HTTP 吗？ | 它有 OAuth 吗？ | 去这里 |
@@ -41,7 +43,7 @@ cd chatgpt-mcp-connect
 
 如果上游本身**已经是公网 HTTPS MCP**，但只给静态 Bearer/API Token，就别再把流量绕回自己的电脑。直接参考 [`recipes/mcdonalds`](./recipes/mcdonalds/)：用 Cloudflare Worker 在边缘提供 ChatGPT 能吃的 OAuth，再把 OAuth bearer 换成上游 Token。
 
-**2. 照最接近的那条 recipe 做。** 就算你的 MCP 不在这九个里面，总有一个跟你形状一样。
+**2. 照最接近的那条 recipe 做。** 就算你的 MCP 不在这十个里面，总有一个跟你形状一样。
 
 **3. 碰 ChatGPT 之前先自检。**
 
@@ -57,7 +59,9 @@ node scripts/doctor.mjs --url https://mcp.example.com --upstream 127.0.0.1:8770 
          The gateway itself is fine — what sits behind it is down.
 ```
 
-## 九条 recipe
+像 MCPX 这种自带 OAuth 的 server，不传 `--gateway`，把 `--upstream` 直接指向 MCPX 自己即可。
+
+## 十条 recipe
 
 每一条都在真机上搭过、跑过。每一条都写清楚了验证了什么、没验证什么、什么时候验证的。
 
@@ -72,13 +76,14 @@ node scripts/doctor.mjs --url https://mcp.example.com --upstream 127.0.0.1:8770 
 | [devspace](./recipes/devspace/) | 本地代码工作区——文件、搜索、shell | 原生 HTTP | 自带 | **Tailscale Funnel** |
 | [webcodex](./recipes/webcodex/) | 项目工具 + 控制台，跑在 WSL 的 Docker 里 | 原生 HTTP | 自带 | Tunnel，本地 YAML |
 | [unreal-engine](./recipes/unreal-engine/) | 虚幻编辑器——Actor、蓝图、材质、Niagara、Sequencer | 原生 HTTP，**Epic 自己的编辑器内服务** | 本地 gateway | Cloudflare Tunnel |
+| [mcpx](./recipes/mcpx/) | **MCP Runtime**——Workspace、持久会话、Skill、上游 MCP 聚合 | 原生 HTTP | 自带 | Cloudflare Tunnel |
 
-**这种差异本身就是重点。** 九条 recipe 之间覆盖了**四种做 OAuth 的方式**——从一行代码都不写，到自己跑一个 gateway——以及**四种公网暴露形态**，其中包括给已经托管好的远程 MCP 直接套纯边缘 Worker，取舍都写清楚了。想选路线看 [`docs/architecture.md`](./docs/architecture.md)，想横向对比看 [`recipes/`](./recipes/)。
+**这种差异本身就是重点。** 十条 recipe 之间覆盖了**四种做 OAuth 的方式**——从一行代码都不写，到自己跑一个 gateway——以及**四种公网暴露形态**，其中包括给已经托管好的远程 MCP 直接套纯边缘 Worker。MCPX 又多出了一层架构选择：让 ChatGPT 直接连接叶子 MCP，还是在前面放一个 Runtime，统一承载会变化的一组本地能力。想选路线看 [`docs/architecture.md`](./docs/architecture.md)，想横向对比看 [`recipes/`](./recipes/)。
 
 ## 仓库里有什么
 
 ```
-recipes/     九条验证过的完整路径
+recipes/     十条验证过的完整路径，其中一条是 Runtime 聚合路径
 templates/   oauth-gateway/  — 给任意 HTTP MCP 套上 OAuth 2.1
              supervisor/     — 让这些进程在重启后还活着
 scripts/     doctor.mjs      — 分层连通性自检，零依赖
@@ -103,11 +108,11 @@ git clone https://github.com/yoruuuchan/chatgpt-mcp-connect.git ~/.agents/skills
 
 ## 边界
 
-**它给你的**：一个真正能用、有认证、重启后还活着的公网 MCP endpoint，外加一个出问题时能告诉你是哪一层坏了的工具。
+**它给你的**：一个真正能用、有认证、重启后还活着的公网 MCP endpoint，外加一个出问题时能告诉你是哪一层坏了的工具。它也告诉你什么时候应该用一个 Runtime 统一接入，而不是给每个叶子 MCP 单独暴露一套连接链路。
 
 **它不是**：MCP 框架、要装的代理、托管服务、沙箱。它不 fork 也不包装任何上游 MCP——每条 recipe 都指向真正的原项目，只告诉你怎么配。它也**不限制**通过认证之后的调用方能做什么——暴露任何东西之前先读 [`docs/security.md`](./docs/security.md)，尤其是「把你不需要的工具关掉」那一段。
 
-**验证于 2026-08-18**，Unreal 那条是 **2026-08-19**，麦当劳这条公网托管 + 边缘 OAuth 路径是 **2026-08-21**；环境以 Windows 11 + WSL2 为主，需要暴露本地服务时使用 Cloudflare / Tailscale。每条 recipe 都写明了那天实测了什么、没实测什么——验证时应用本身没开着的，recipe 里就直说，不含糊过去。
+**验证于 2026-08-18**，Unreal 那条是 **2026-08-19**，麦当劳这条公网托管 + 边缘 OAuth 路径和 MCPX Runtime 部署都是 **2026-08-21**；环境以 Windows 11 + WSL2 为主，需要暴露本地服务时使用 Cloudflare / Tailscale。每条 recipe 都写明了那天实测了什么、没实测什么——验证时应用本身没开着的，recipe 里就直说，不含糊过去。
 
 ## 上游致谢
 
@@ -121,6 +126,8 @@ git clone https://github.com/yoruuuchan/chatgpt-mcp-connect.git ~/.agents/skills
 | [artokun/comfyui-mcp](https://github.com/artokun/comfyui-mcp) | MIT | ComfyUI |
 | [Waishnav/devspace](https://github.com/Waishnav/devspace) | MIT | DevSpace，以及 gateway 模板复用的 `SingleUserOAuthProvider` |
 | [yyjeqhc/webcodex](https://github.com/yyjeqhc/webcodex) | Apache-2.0 | WebCodex |
+| [opentokenz/mcpx](https://github.com/opentokenz/mcpx) | Apache-2.0 | MCP Runtime / 聚合 recipe |
+| [sugarforever/amap-mcp-server](https://github.com/sugarforever/amap-mcp-server) | 见上游仓库 | MCPX recipe 里的上游 MCP 示例 |
 | [punkpeye/mcp-proxy](https://github.com/punkpeye/mcp-proxy) | MIT | stdio → Streamable HTTP 桥 |
 | [modelcontextprotocol/typescript-sdk](https://github.com/modelcontextprotocol/typescript-sdk) | Apache-2.0 / MIT / CC-BY-4.0 | OAuth 路由和 Bearer 校验 |
 | [cloudflare/workers-oauth-provider](https://github.com/cloudflare/workers-oauth-provider) | MIT | ComfyUI 和麦当劳 recipe 的边缘 OAuth |
