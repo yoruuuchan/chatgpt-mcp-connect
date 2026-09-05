@@ -1,0 +1,7 @@
+.env
+secrets/
+gateway-state/
+*.token
+*.key
+accounts.json
+node_modules/

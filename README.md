@@ -2,7 +2,7 @@
 
 **Reproducible recipes for connecting local and remote MCP servers to ChatGPT.**
 
-Your MCP server already works in Claude Code or Cursor. ChatGPT can't see it. This repo is the last mile — ten paths that were actually built, run, and verified end to end, written down so you don't spend an afternoon rediscovering them.
+Your MCP server already works in Claude Code or Cursor. ChatGPT can't see it. This repo is the last mile — eleven paths that were actually built, run, and verified end to end, written down so you don't spend an afternoon rediscovering them.
 
 [中文说明](./README.zh-CN.md) · [Architecture](./docs/architecture.md) · [Security](./docs/security.md) · [Troubleshooting](./docs/troubleshooting.md)
 
@@ -43,7 +43,7 @@ cd chatgpt-mcp-connect
 
 If the upstream is **already hosted on public HTTPS** but only gives you a static Bearer/API token, do not tunnel it back through your workstation. Use [`recipes/mcdonalds`](./recipes/mcdonalds/) as the reference shape: a Cloudflare Worker provides ChatGPT-compatible OAuth at the edge and swaps the OAuth bearer for the upstream token.
 
-**2. Follow the closest recipe.** Even if your MCP server isn't one of the ten, one of them has your shape.
+**2. Follow the closest recipe.** Even if your MCP server isn't one of the eleven, one of them has your shape.
 
 **3. Check your work before touching ChatGPT.**
 
@@ -53,7 +53,7 @@ node scripts/doctor.mjs --url https://mcp.example.com --upstream 127.0.0.1:8770 
 
 It probes each hop in order and names the first one that's broken, instead of leaving you to guess from a blank ChatGPT error.
 
-```
+```text
 [  ok  ] 1. MCP server            127.0.0.1:8770 accepting connections
 [ FAIL ] 2. OAuth gateway         gateway is up and reports upstream unreachable (HTTP 503)
          The gateway itself is fine — what sits behind it is down.
@@ -70,6 +70,7 @@ Each was built and verified on real hardware. Each records what was tested, what
 | [davinci-resolve](./recipes/davinci-resolve/) | DaVinci Resolve Studio — timelines, media, colour, render | HTTP native | local gateway | Cloudflare Tunnel |
 | [windows-desktop](./recipes/windows-desktop/) | Windows GUI automation, with the dangerous tools switched off | HTTP native | local gateway | Cloudflare Tunnel |
 | [blender](./recipes/blender/) | Blender scene graph and Python | stdio → bridge → addon socket | local gateway | Cloudflare Tunnel |
+| [qq-mail-mcp](./recipes/qq-mail-mcp/) | QQ Mail over IMAP/SMTP — search, read, threads, attachments, draft, reply, send | stdio → bridge | local gateway | Cloudflare Tunnel on an always-on cloud host |
 | [comfyui](./recipes/comfyui/) | ComfyUI workflows and generation | HTTP native | **Cloudflare Worker** | Worker + Tunnel |
 | [mcdonalds](./recipes/mcdonalds/) | McDonald's China official hosted MCP — account, coupons, menu, orders | hosted Streamable HTTP | **Cloudflare Worker OAuth facade** | **Worker custom domain, no Tunnel** |
 | [kimi-computer-use](./recipes/kimi-computer-use/) | Desktop computer-use agent | stdio → bridge | **Cloudflare Access, zero code** | Cloudflare Tunnel |
@@ -82,8 +83,8 @@ The variety is the point. Between them they cover **four ways to do OAuth** — 
 
 ## What's in here
 
-```
-recipes/     ten verified end-to-end paths, including a runtime aggregation path
+```text
+recipes/     eleven verified end-to-end paths, including a runtime aggregation path
 templates/   oauth-gateway/  — OAuth 2.1 in front of any HTTP MCP server
              supervisor/     — keep the processes alive across reboots
 scripts/     doctor.mjs      — layered connectivity check, no dependencies
@@ -112,7 +113,7 @@ Then add one line to your global `CLAUDE.md` or `AGENTS.md`:
 
 **This is not** an MCP framework, a proxy to install, a hosted service, or a sandbox. It doesn't fork or wrap any upstream MCP server — every recipe points at the real project and tells you how to configure it. And it does not constrain what an authenticated caller can do; read [`docs/security.md`](./docs/security.md) before you expose anything, especially the part about turning off the tools you don't need.
 
-**Verified 2026-08-18**, the Unreal recipe on **2026-08-19**, and both the hosted McDonald's edge-OAuth recipe and the MCPX runtime deployment on **2026-08-21**, on Windows 11 + WSL2 and Cloudflare/Tailscale infrastructure where applicable. Each recipe states what was live-checked on that date and what wasn't — where an application wasn't running at verification time, the recipe says so rather than implying more coverage than it has.
+The original workstation recipes were verified on **2026-08-18**, Unreal on **2026-08-19**, the hosted McDonald's edge-OAuth recipe and MCPX runtime on **2026-08-21**, and QQ Mail on an always-on Linux cloud host on **2026-09-05**. Each recipe states what was live-checked on that date and what wasn't — where an application wasn't running at verification time, the recipe says so rather than implying more coverage than it has.
 
 ## Attribution
 
@@ -123,6 +124,7 @@ Every MCP server here belongs to someone else. This repo links to them; it copie
 | [samuelgursky/davinci-resolve-mcp](https://github.com/samuelgursky/davinci-resolve-mcp) | MIT | DaVinci Resolve |
 | [CursorTouch/Windows-MCP](https://github.com/CursorTouch/Windows-MCP) | MIT | Windows desktop |
 | [ahujasid/blender-mcp](https://github.com/ahujasid/blender-mcp) | MIT | Blender |
+| [honest-magic/mail-mcp](https://github.com/honest-magic/mail-mcp) | MIT | QQ Mail over IMAP/SMTP |
 | [artokun/comfyui-mcp](https://github.com/artokun/comfyui-mcp) | MIT | ComfyUI |
 | [Waishnav/devspace](https://github.com/Waishnav/devspace) | MIT | DevSpace, and `SingleUserOAuthProvider` used by the gateway template |
 | [yyjeqhc/webcodex](https://github.com/yyjeqhc/webcodex) | Apache-2.0 | WebCodex |

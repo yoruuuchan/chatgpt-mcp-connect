@@ -1,6 +1,6 @@
 # Recipes
 
-Ten paths that were actually built and run. Pick the one whose *shape* matches yours — the specific application matters much less than whether your server speaks HTTP, whether it is already hosted publicly, where OAuth should happen, and whether ChatGPT should connect to the leaf server directly or to an MCP runtime in front of several capabilities.
+Eleven paths that were actually built and run. Pick the one whose *shape* matches yours — the specific application matters much less than whether your server speaks HTTP, whether it is already hosted publicly, where OAuth should happen, and whether ChatGPT should connect to the leaf server directly or to an MCP runtime in front of several capabilities.
 
 ## Pick by shape
 
@@ -8,12 +8,13 @@ Ten paths that were actually built and run. Pick the one whose *shape* matches y
 |---|---|
 | is really a **set of Workspaces, Skills, or upstream MCP servers** you want behind one connector | [mcpx](./mcpx/) — use an MCP runtime / aggregation layer |
 | already speaks Streamable HTTP, has no auth | [davinci-resolve](./davinci-resolve/) — the canonical direct path |
-| is stdio only | [blender](./blender/) or [kimi-computer-use](./kimi-computer-use/) — both add a bridge first |
+| is stdio only | [blender](./blender/), [kimi-computer-use](./kimi-computer-use/), or [qq-mail-mcp](./qq-mail-mcp/) — each adds a bridge first |
 | already has its own OAuth | [devspace](./devspace/) or [webcodex](./webcodex/) — you only need to expose it |
 | should stay reachable while the workstation sleeps | [comfyui](./comfyui/) — OAuth at the edge, in a Worker |
 | is already hosted on public HTTPS but only has static Bearer/API-key auth | [mcdonalds](./mcdonalds/) — OAuth facade at the edge, no workstation or Tunnel |
 | is on a machine with no domain and no Cloudflare account | [devspace](./devspace/) — Tailscale Funnel |
 | runs in Docker inside WSL | [webcodex](./webcodex/) — tunnel as a systemd unit, plus the WSL keepalive trap |
+| must stay up on a headless cloud host while your personal computer is off | [qq-mail-mcp](./qq-mail-mcp/) — bridge, OAuth gateway, and Tunnel as Linux systemd services |
 | has dangerous tools you'd rather not expose | [windows-desktop](./windows-desktop/) — tool exclusion as a first-class step |
 
 ## Full comparison
@@ -23,6 +24,7 @@ Ten paths that were actually built and run. Pick the one whose *shape* matches y
 | [davinci-resolve](./davinci-resolve/) | [samuelgursky/davinci-resolve-mcp](https://github.com/samuelgursky/davinci-resolve-mcp) | MIT | HTTP native | — | local gateway | CF Tunnel, token |
 | [windows-desktop](./windows-desktop/) | [CursorTouch/Windows-MCP](https://github.com/CursorTouch/Windows-MCP) | MIT | HTTP native | — | local gateway | CF Tunnel, token |
 | [blender](./blender/) | [ahujasid/blender-mcp](https://github.com/ahujasid/blender-mcp) | MIT | stdio | mcp-proxy | local gateway | CF Tunnel, token |
+| [qq-mail-mcp](./qq-mail-mcp/) | [honest-magic/mail-mcp](https://github.com/honest-magic/mail-mcp) | MIT | stdio | mcp-proxy | local gateway | CF Tunnel, token; Linux cloud host |
 | [comfyui](./comfyui/) | [artokun/comfyui-mcp](https://github.com/artokun/comfyui-mcp) | MIT | HTTP native | — | CF Worker | Worker + Tunnel |
 | [mcdonalds](./mcdonalds/) | [McDonald's China MCP](https://open.mcd.cn/mcp/doc) | proprietary hosted service | hosted Streamable HTTP | — | CF Worker OAuth facade | Worker custom domain |
 | [unreal-engine](./unreal-engine/) | Unreal MCP (`ModelContextProtocol`, UE 5.8) | UE EULA | HTTP native | — | local gateway | CF Tunnel, token |
@@ -51,7 +53,7 @@ Ordered by how much code you end up maintaining.
 
 **Cloudflare Worker** — your own Worker with `@cloudflare/workers-oauth-provider`, state in KV. More work than Access, less than a gateway, and the auth layer stays up independently of your workstation. For a local upstream, the Worker can sit in front of a tunnel as in [comfyui](./comfyui/); for an already-hosted upstream, it can proxy directly with no tunnel at all as in [mcdonalds](./mcdonalds/).
 
-**Local gateway** — [`templates/oauth-gateway`](../templates/oauth-gateway/), a Node process on the same machine. Works anywhere, no cloud dependency beyond the tunnel, small enough to read end to end. This is the default recommendation for local upstreams that do not already ship OAuth.
+**Local gateway** — [`templates/oauth-gateway`](../templates/oauth-gateway/), a Node process on the same machine. Works anywhere, no cloud dependency beyond the tunnel, small enough to read end to end. This is the default recommendation for local upstreams that do not already ship OAuth, including the always-on QQ Mail cloud deployment.
 
 ## Choosing an exposure pattern
 

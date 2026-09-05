@@ -26,6 +26,7 @@ Be honest with yourself about which row you're in before you publish it.
 | [kimi-computer-use](../recipes/kimi-computer-use/) | See the screen, click anywhere, type anything, launch any app | Effectively yes — "launch app + type" reaches a shell |
 | [windows-desktop](../recipes/windows-desktop/) | Same GUI control, but shell / filesystem / registry / process tools are **excluded by config** | Not in one call; still reachable by driving a GUI |
 | [davinci-resolve](../recipes/davinci-resolve/) | Full Resolve Scripting API — read and modify projects, timelines, media, render | No, bounded by Resolve's API |
+| [qq-mail-mcp](../recipes/qq-mail-mcp/) | Read mailbox content and attachments; create drafts, reply, and send to recipients after confirmation | No code execution, but direct data disclosure and outbound-message risk |
 
 MCPX deserves special attention because aggregation changes the unit of risk. Adding an upstream MCP or a Skill does not create a new public hostname, but it **does** expand what the already-authenticated runtime can reach. Treat every extension as a security-surface change even when the public connector itself is unchanged.
 

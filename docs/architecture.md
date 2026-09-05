@@ -103,7 +103,7 @@ A Cloudflare Tunnel forwards network traffic. It does **not** turn a stdio proce
 
 - **stdio behind MCPX** — do not create a public HTTP bridge just for ChatGPT. MCPX can spawn supported stdio upstream MCP servers itself from `.mcp.json`, keeping the leaf process private behind the runtime boundary. See the AMap example in the [MCPX recipe](../recipes/mcpx/).
 
-Recipes using a direct bridge: [blender](../recipes/blender/), [kimi-computer-use](../recipes/kimi-computer-use/).
+Recipes using a direct bridge: [blender](../recipes/blender/), [kimi-computer-use](../recipes/kimi-computer-use/), [qq-mail-mcp](../recipes/qq-mail-mcp/).
 
 ### 2. Auth: where does OAuth happen?
 
@@ -114,7 +114,7 @@ Four patterns, in rough order of how much code you end up owning.
 | **Built-in** | nothing | the server/runtime's own store | The public MCP boundary already ships OAuth ([devspace](../recipes/devspace/), [webcodex](../recipes/webcodex/), [mcpx](../recipes/mcpx/)) |
 | **Cloudflare Access managed OAuth** | nothing | Cloudflare | You're already on Cloudflare Zero Trust and don't need custom consent ([kimi-computer-use](../recipes/kimi-computer-use/)) |
 | **Cloudflare Worker** | a small Worker | Workers KV | You want auth to stay up when the workstation sleeps, or the upstream is already hosted publicly ([comfyui](../recipes/comfyui/), [mcdonalds](../recipes/mcdonalds/)) |
-| **Local gateway** | config only, using [`templates/oauth-gateway`](../templates/oauth-gateway/) | local SQLite | Everything else ([davinci-resolve](../recipes/davinci-resolve/), [windows-desktop](../recipes/windows-desktop/), [blender](../recipes/blender/)) |
+| **Local gateway** | config only, using [`templates/oauth-gateway`](../templates/oauth-gateway/) | local SQLite | Everything else ([davinci-resolve](../recipes/davinci-resolve/), [windows-desktop](../recipes/windows-desktop/), [blender](../recipes/blender/), [qq-mail-mcp](../recipes/qq-mail-mcp/)) |
 
 The local gateway is the default recommendation for a direct local MCP that lacks OAuth because it works anywhere, has no cloud dependency beyond the tunnel, and is one process you can read end to end. It does not implement an authorization server from scratch — it reuses `SingleUserOAuthProvider` from [DevSpace](https://github.com/Waishnav/devspace) and the auth router from the MCP TypeScript SDK, and adds the reverse proxy and health check.
 

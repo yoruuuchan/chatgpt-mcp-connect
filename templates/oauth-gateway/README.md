@@ -2,11 +2,11 @@
 
 A ~230-line Node process that puts ChatGPT-compatible OAuth 2.1 in front of an MCP server that speaks Streamable HTTP but has no authentication of its own.
 
-```
+```text
 ChatGPT ──OAuth 2.1──▶ gateway :8771 ──static bearer──▶ your MCP server :8770
 ```
 
-Used by the [davinci-resolve](../../recipes/davinci-resolve/), [windows-desktop](../../recipes/windows-desktop/) and [blender](../../recipes/blender/) recipes.
+Used by the [davinci-resolve](../../recipes/davinci-resolve/), [windows-desktop](../../recipes/windows-desktop/), [blender](../../recipes/blender/), and [qq-mail-mcp](../../recipes/qq-mail-mcp/) recipes.
 
 ## What it is and isn't
 
@@ -24,7 +24,7 @@ Nothing is vendored. `npm install` pulls both upstreams from their registries.
 
 ## What it serves
 
-```
+```text
 GET  /.well-known/oauth-authorization-server        endpoints, DCR, PKCE S256
 GET  /.well-known/oauth-protected-resource/mcp      points at the authorization server
 POST /register                                      dynamic client registration (RFC 7591)
@@ -47,7 +47,7 @@ Edit `.env`. At minimum set `PUBLIC_BASE_URL` to the public HTTPS origin you wil
 
 If your MCP server has its own bearer token — it should — put the full header value in `secrets/upstream-authorization.txt`:
 
-```
+```text
 Bearer <the token your MCP server expects>
 ```
 
@@ -61,7 +61,7 @@ Node 20.6+ reads `--env-file` natively. On older Node, export the variables your
 
 Expected output:
 
-```
+```text
 [gateway] listening on http://127.0.0.1:8771/mcp
 [gateway] upstream  http://127.0.0.1:8770/mcp
 [gateway] public    https://mcp.example.com/mcp
