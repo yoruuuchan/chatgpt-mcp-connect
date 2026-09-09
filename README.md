@@ -74,12 +74,12 @@ Each was built and verified on real hardware. Each records what was tested, what
 | [comfyui](./recipes/comfyui/) | ComfyUI workflows and generation | HTTP native | **Cloudflare Worker** | Worker + Tunnel |
 | [mcdonalds](./recipes/mcdonalds/) | McDonald's China official hosted MCP — account, coupons, menu, orders | hosted Streamable HTTP | **Cloudflare Worker OAuth facade** | **Worker custom domain, no Tunnel** |
 | [kimi-computer-use](./recipes/kimi-computer-use/) | Desktop computer-use agent | stdio → bridge | **Cloudflare Access, zero code** | Cloudflare Tunnel |
-| [devspace](./recipes/devspace/) | Local coding workspace — files, search, shell | HTTP native | built in | **Tailscale Funnel** |
+| [devspace](./recipes/devspace/) | Local coding workspace — files, search, shell | HTTP native | built in | **Cloudflare Tunnel (Tailscale Funnel alternative)** |
 | [webcodex](./recipes/webcodex/) | Project tools + console, in Docker on WSL | HTTP native | built in | Tunnel, local YAML |
 | [unreal-engine](./recipes/unreal-engine/) | Unreal Editor — actors, Blueprints, materials, Niagara, Sequencer | HTTP native, **Epic's own in-editor server** | local gateway | Cloudflare Tunnel |
 | [mcpx](./recipes/mcpx/) | **MCP runtime** — Workspaces, persistent sessions, Skills, upstream MCP aggregation | HTTP native | built in | Cloudflare Tunnel |
 
-The variety is the point. Between them they cover **four ways to do OAuth** — from writing nothing at all to running your own gateway — and **four public-exposure shapes**, including a pure edge Worker in front of an already-hosted MCP. MCPX adds a second architectural choice on top: connect ChatGPT directly to a leaf MCP, or put an MCP runtime in front of a changing set of local capabilities. Read [`docs/architecture.md`](./docs/architecture.md) to pick, or [`recipes/`](./recipes/) for the full comparison.
+The variety is the point. Between them they cover **four ways to do OAuth** — from writing nothing at all to running your own gateway — and several public-exposure shapes: Cloudflare Tunnel, Worker custom domains, and Tailscale Funnel as an alternative when you do not have a Cloudflare-managed domain. MCPX adds a second architectural choice on top: connect ChatGPT directly to a leaf MCP, or put an MCP runtime in front of a changing set of local capabilities. Read [`docs/architecture.md`](./docs/architecture.md) to pick, or [`recipes/`](./recipes/) for the full comparison.
 
 ## What's in here
 
@@ -113,7 +113,7 @@ Then add one line to your global `CLAUDE.md` or `AGENTS.md`:
 
 **This is not** an MCP framework, a proxy to install, a hosted service, or a sandbox. It doesn't fork or wrap any upstream MCP server — every recipe points at the real project and tells you how to configure it. And it does not constrain what an authenticated caller can do; read [`docs/security.md`](./docs/security.md) before you expose anything, especially the part about turning off the tools you don't need.
 
-The original workstation recipes were verified on **2026-08-18**, Unreal on **2026-08-19**, the hosted McDonald's edge-OAuth recipe and MCPX runtime on **2026-08-21**, and QQ Mail on an always-on Linux cloud host on **2026-09-05**. Each recipe states what was live-checked on that date and what wasn't — where an application wasn't running at verification time, the recipe says so rather than implying more coverage than it has.
+The original workstation recipes were verified on **2026-08-18**, Unreal on **2026-08-19**, the hosted McDonald's edge-OAuth recipe and MCPX runtime on **2026-08-21**, and QQ Mail on an always-on Linux cloud host on **2026-09-05**. DevSpace's public exposure layer moved from Tailscale Funnel to Cloudflare Tunnel on **2026-09-09**; the Funnel path remains documented as a previously tested alternative. Each recipe states what was live-checked on that date and what wasn't — where an application wasn't running at verification time, the recipe says so rather than implying more coverage than it has.
 
 ## Attribution
 
