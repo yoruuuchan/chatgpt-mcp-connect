@@ -74,12 +74,12 @@ node scripts/doctor.mjs --url https://mcp.example.com --upstream 127.0.0.1:8770 
 | [comfyui](./recipes/comfyui/) | ComfyUI 工作流和生成 | 原生 HTTP | **Cloudflare Worker** | Worker + Tunnel |
 | [mcdonalds](./recipes/mcdonalds/) | 麦当劳中国官方托管 MCP——账户、优惠券、菜单、订单 | 托管 Streamable HTTP | **Cloudflare Worker OAuth facade** | **Worker 自定义域名，无 Tunnel** |
 | [kimi-computer-use](./recipes/kimi-computer-use/) | 桌面 computer-use agent | stdio → 桥 | **Cloudflare Access，零代码** | Cloudflare Tunnel |
-| [devspace](./recipes/devspace/) | 本地代码工作区——文件、搜索、shell | 原生 HTTP | 自带 | **Tailscale Funnel** |
+| [devspace](./recipes/devspace/) | 本地代码工作区——文件、搜索、shell | 原生 HTTP | 自带 | **Cloudflare Tunnel（Tailscale Funnel 备选）** |
 | [webcodex](./recipes/webcodex/) | 项目工具 + 控制台，跑在 WSL 的 Docker 里 | 原生 HTTP | 自带 | Tunnel，本地 YAML |
 | [unreal-engine](./recipes/unreal-engine/) | 虚幻编辑器——Actor、蓝图、材质、Niagara、Sequencer | 原生 HTTP，**Epic 自己的编辑器内服务** | 本地 gateway | Cloudflare Tunnel |
 | [mcpx](./recipes/mcpx/) | **MCP Runtime**——Workspace、持久会话、Skill、上游 MCP 聚合 | 原生 HTTP | 自带 | Cloudflare Tunnel |
 
-**这种差异本身就是重点。** 十一条 recipe 之间覆盖了**四种做 OAuth 的方式**——从一行代码都不写，到自己跑一个 gateway——以及**四种公网暴露形态**，其中包括给已经托管好的远程 MCP 直接套纯边缘 Worker。MCPX 又多出了一层架构选择：让 ChatGPT 直接连接叶子 MCP，还是在前面放一个 Runtime，统一承载会变化的一组本地能力。想选路线看 [`docs/architecture.md`](./docs/architecture.md)，想横向对比看 [`recipes/`](./recipes/)。
+**这种差异本身就是重点。** 十一条 recipe 之间覆盖了**四种做 OAuth 的方式**——从一行代码都不写，到自己跑一个 gateway——以及多种公网暴露形态：Cloudflare Tunnel、Worker 自定义域名等当前部署路径，同时保留 Tailscale Funnel 作为没有域名或不使用 Cloudflare 时的备选。MCPX 又多出了一层架构选择：让 ChatGPT 直接连接叶子 MCP，还是在前面放一个 Runtime，统一承载会变化的一组本地能力。想选路线看 [`docs/architecture.md`](./docs/architecture.md)，想横向对比看 [`recipes/`](./recipes/)。
 
 ## 仓库里有什么
 
@@ -113,7 +113,7 @@ git clone https://github.com/yoruuuchan/chatgpt-mcp-connect.git ~/.agents/skills
 
 **它不是**：MCP 框架、要装的代理、托管服务、沙箱。它不 fork 也不包装任何上游 MCP——每条 recipe 都指向真正的原项目，只告诉你怎么配。它也**不限制**通过认证之后的调用方能做什么——暴露任何东西之前先读 [`docs/security.md`](./docs/security.md)，尤其是「把你不需要的工具关掉」那一段。
 
-最初一批桌面 recipe 验证于 **2026-08-18**，Unreal 是 **2026-08-19**，麦当劳公网托管 + 边缘 OAuth 路径和 MCPX Runtime 是 **2026-08-21**，QQ 邮箱则于 **2026-09-05** 在常驻 Linux 云主机上验证。每条 recipe 都写明了当天实测了什么、没实测什么——验证时应用本身没开着的，recipe 里就直说，不含糊过去。
+最初一批桌面 recipe 验证于 **2026-08-18**，Unreal 是 **2026-08-19**，麦当劳公网托管 + 边缘 OAuth 路径和 MCPX Runtime 是 **2026-08-21**，QQ 邮箱则于 **2026-09-05** 在常驻 Linux 云主机上验证。DevSpace 的公网暴露层于 **2026-09-09** 从 Tailscale Funnel 迁移到 Cloudflare Tunnel；原 Funnel 路径作为历史实测和备选方案保留。每条 recipe 都写明了当天实测了什么、没实测什么——验证时应用本身没开着的，recipe 里就直说，不含糊过去。
 
 ## 上游致谢
 
