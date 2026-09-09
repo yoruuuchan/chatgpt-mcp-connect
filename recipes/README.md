@@ -12,7 +12,7 @@ Eleven paths that were actually built and run. Pick the one whose *shape* matche
 | already has its own OAuth | [devspace](./devspace/) or [webcodex](./webcodex/) — you only need to expose it |
 | should stay reachable while the workstation sleeps | [comfyui](./comfyui/) — OAuth at the edge, in a Worker |
 | is already hosted on public HTTPS but only has static Bearer/API-key auth | [mcdonalds](./mcdonalds/) — OAuth facade at the edge, no workstation or Tunnel |
-| is on a machine with no domain and no Cloudflare account | [devspace](./devspace/) — Tailscale Funnel |
+| is on a machine with no domain and no Cloudflare account | use Tailscale Funnel as an alternative exposure path; [devspace](./devspace/) documents the previous Funnel deployment |
 | runs in Docker inside WSL | [webcodex](./webcodex/) — tunnel as a systemd unit, plus the WSL keepalive trap |
 | must stay up on a headless cloud host while your personal computer is off | [qq-mail-mcp](./qq-mail-mcp/) — bridge, OAuth gateway, and Tunnel as Linux systemd services |
 | has dangerous tools you'd rather not expose | [windows-desktop](./windows-desktop/) — tool exclusion as a first-class step |
@@ -29,7 +29,7 @@ Eleven paths that were actually built and run. Pick the one whose *shape* matche
 | [mcdonalds](./mcdonalds/) | [McDonald's China MCP](https://open.mcd.cn/mcp/doc) | proprietary hosted service | hosted Streamable HTTP | — | CF Worker OAuth facade | Worker custom domain |
 | [unreal-engine](./unreal-engine/) | Unreal MCP (`ModelContextProtocol`, UE 5.8) | UE EULA | HTTP native | — | local gateway | CF Tunnel, token |
 | [kimi-computer-use](./kimi-computer-use/) | Moonshot Kimi CU | proprietary | stdio | mcp-proxy | CF Access managed | CF Tunnel, token |
-| [devspace](./devspace/) | [Waishnav/devspace](https://github.com/Waishnav/devspace) | MIT | HTTP native | — | built in | Tailscale Funnel |
+| [devspace](./devspace/) | [Waishnav/devspace](https://github.com/Waishnav/devspace) | MIT | HTTP native | — | built in | **CF Tunnel (current); Tailscale Funnel documented alternative** |
 | [webcodex](./webcodex/) | [yyjeqhc/webcodex](https://github.com/yyjeqhc/webcodex) | Apache-2.0 | HTTP native | — | built in | CF Tunnel, local YAML |
 | [mcpx](./mcpx/) | [opentokenz/mcpx](https://github.com/opentokenz/mcpx) | Apache-2.0 | HTTP native | — | built in | CF Tunnel; aggregates Workspaces / Skills / upstream MCPs |
 
@@ -61,7 +61,7 @@ Ordered by how much code you end up maintaining.
 
 **Cloudflare Tunnel, local YAML** — `config.yml` plus a credentials file. Version-controllable, works headless, no dashboard needed to change routing. What you want on Linux or WSL with systemd. Remember the `http_status:404` catch-all at the end of the ingress list, or `cloudflared` won't start.
 
-**Tailscale Funnel** — `tailscale funnel <port>`. No domain, no DNS, no Cloudflare account. You don't get to choose the hostname, and access control is coarser.
+**Tailscale Funnel** — `tailscale funnel <port>`. No domain, no DNS, no Cloudflare account. You don't get to choose the hostname, and access control is coarser. DevSpace originally used this path, but its current long-running deployment moved to Cloudflare Tunnel after Funnel became slow and intermittently unreliable on the tested Windows host while a system proxy/VPN was active.
 
 **Cloudflare Worker custom domain** — the Worker itself is the public MCP endpoint. No tunnel and no local origin. Use this when the upstream MCP is already hosted publicly and the missing piece is ChatGPT-compatible OAuth; see [mcdonalds](./mcdonalds/).
 
