@@ -114,7 +114,7 @@ Four patterns, in rough order of how much code you end up owning.
 | **Built-in** | nothing | the server/runtime's own store | The public MCP boundary already ships OAuth ([devspace](../recipes/devspace/), [webcodex](../recipes/webcodex/), [mcpx](../recipes/mcpx/)) |
 | **Cloudflare Access managed OAuth** | nothing | Cloudflare | You're already on Cloudflare Zero Trust and don't need custom consent ([kimi-computer-use](../recipes/kimi-computer-use/)) |
 | **Cloudflare Worker** | a small Worker | Workers KV | You want auth to stay up when the workstation sleeps, or the upstream is already hosted publicly ([comfyui](../recipes/comfyui/), [mcdonalds](../recipes/mcdonalds/)) |
-| **Local gateway** | config only, using [`templates/oauth-gateway`](../templates/oauth-gateway/) | local SQLite | Everything else ([davinci-resolve](../recipes/davinci-resolve/), [windows-desktop](../recipes/windows-desktop/), [blender](../recipes/blender/), [qq-mail-mcp](../recipes/qq-mail-mcp/)) |
+| **Local gateway** | config only, using [`templates/oauth-gateway`](../templates/oauth-gateway/) | local SQLite | Everything else ([davinci-resolve](../recipes/davinci-resolve/), [windows-desktop](../recipes/windows-desktop/), [blender](../recipes/blender/), [qq-mail-mcp](../recipes/qq-mail-mcp/), [listening-bridge](../recipes/listening-bridge/)) |
 
 The local gateway is the default recommendation for a direct local MCP that lacks OAuth because it works anywhere, has no cloud dependency beyond the tunnel, and is one process you can read end to end. It does not implement an authorization server from scratch — it reuses `SingleUserOAuthProvider` from [DevSpace](https://github.com/Waishnav/devspace) and the auth router from the MCP TypeScript SDK, and adds the reverse proxy and health check.
 
@@ -186,6 +186,23 @@ https://mcp.example.com/mcp
   ▼
 the application
 ```
+
+For a mobile or roaming device that cannot accept reliable inbound connections, keep the device on the client side of the trust boundary and let it dial out to an always-on host. The host owns MCP, OAuth, and public ingress. [`listening-bridge`](../recipes/listening-bridge/) is the verified example.
+
+```text
+mobile device
+  │ outbound persistent WSS · device token
+  ▼
+hosted state bridge / MCP server
+  │ loopback Streamable HTTP
+  ▼
+OAuth gateway on the same host
+  │ public HTTPS through Tunnel
+  ▼
+ChatGPT
+```
+
+This shape survives carrier NAT, changing phone IPs, and a sleeping workstation because the only long-lived mobile connection is outbound. Keep device auth separate from ChatGPT OAuth credentials, and expose the phone listener through WSS on its own hostname.
 
 For an already-hosted MCP with static upstream auth, the shorter shape is:
 

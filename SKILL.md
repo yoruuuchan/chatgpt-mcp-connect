@@ -38,6 +38,8 @@ For a **direct leaf server**, answer two questions and follow the matching recip
 
 If it already speaks Streamable HTTP on a **public hosted HTTPS endpoint** but only has static Bearer/API-key auth, use the [`mcdonalds`](./recipes/mcdonalds/) pattern instead of tunneling it through a workstation: terminate ChatGPT OAuth in a Cloudflare Worker and proxy directly to the hosted upstream.
 
+If the source is a **mobile device that cannot reliably accept inbound connections**, use the [`listening-bridge`](./recipes/listening-bridge/) pattern: let the device maintain an authenticated outbound persistent WebSocket to an always-on host, then expose the host's loopback MCP through OAuth and public HTTPS.
+
 Then pick an exposure: Cloudflare Tunnel (token mode is fastest), Cloudflare Tunnel with local YAML (headless/WSL/systemd), Tailscale Funnel (no domain needed), or a pure Cloudflare Worker custom domain when the upstream is already public.
 
 Reuse whatever the user already has — an existing Cloudflare account, domain, tunnel, identity provider, runtime, or verified deployment — before creating anything new.

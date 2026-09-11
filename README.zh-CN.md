@@ -2,7 +2,7 @@
 
 **把本地和远程 MCP Server 接进 ChatGPT 的可复现配方。**
 
-你的 MCP 在 Claude Code 或 Cursor 里跑得好好的，ChatGPT 就是看不见它。这个仓库解决的就是这最后一公里——十一条真正搭起来、跑通、验证过的路径，写下来，省得你再花一个下午重新踩一遍。
+你的 MCP 在 Claude Code 或 Cursor 里跑得好好的，ChatGPT 就是看不见它。这个仓库解决的就是这最后一公里——十二条真正搭起来、跑通、验证过的路径，写下来，省得你再花一个下午重新踩一遍。
 
 [English](./README.md) · [架构](./docs/architecture.md) · [安全](./docs/security.md) · [排错](./docs/troubleshooting.md)
 
@@ -43,7 +43,9 @@ cd chatgpt-mcp-connect
 
 如果上游本身**已经是公网 HTTPS MCP**，但只给静态 Bearer/API Token，就别再把流量绕回自己的电脑。直接参考 [`recipes/mcdonalds`](./recipes/mcdonalds/)：用 Cloudflare Worker 在边缘提供 ChatGPT 能吃的 OAuth，再把 OAuth bearer 换成上游 Token。
 
-**2. 照最接近的那条 recipe 做。** 就算你的 MCP 不在这十一个里面，总有一个跟你形状一样。
+如果数据源是**需要在移动网络、离开电脑后仍保持可达的手机设备**，参考 [`recipes/listening-bridge`](./recipes/listening-bridge/)：手机只维持一条主动出站的持久 WebSocket 到常驻服务器，ChatGPT 通过公网 HTTPS + OAuth 访问服务器上的 MCP。
+
+**2. 照最接近的那条 recipe 做。** 就算你的 MCP 不在这十二个里面，总有一个跟你形状一样。
 
 **3. 碰 ChatGPT 之前先自检。**
 
@@ -61,7 +63,7 @@ node scripts/doctor.mjs --url https://mcp.example.com --upstream 127.0.0.1:8770 
 
 像 MCPX 这种自带 OAuth 的 server，不传 `--gateway`，把 `--upstream` 直接指向 MCPX 自己即可。
 
-## 十一条 recipe
+## 十二条 recipe
 
 每一条都在真机上搭过、跑过。每一条都写清楚了验证了什么、没验证什么、什么时候验证的。
 
@@ -73,18 +75,19 @@ node scripts/doctor.mjs --url https://mcp.example.com --upstream 127.0.0.1:8770 
 | [qq-mail-mcp](./recipes/qq-mail-mcp/) | QQ 邮箱 IMAP/SMTP——搜索、读取、线程、附件、草稿、回复、发信 | stdio → 桥 | 本地 gateway | 国内云主机上的 Cloudflare Tunnel |
 | [comfyui](./recipes/comfyui/) | ComfyUI 工作流和生成 | 原生 HTTP | **Cloudflare Worker** | Worker + Tunnel |
 | [mcdonalds](./recipes/mcdonalds/) | 麦当劳中国官方托管 MCP——账户、优惠券、菜单、订单 | 托管 Streamable HTTP | **Cloudflare Worker OAuth facade** | **Worker 自定义域名，无 Tunnel** |
+| [listening-bridge](./recipes/listening-bridge/) | Android MediaSession 元数据与播放控制，通过手机主动出站 WebSocket 汇入云端 | 云端 Streamable HTTP | 云端本地 gateway | Cloudflare Tunnel；HTTPS/WSS 分离域名 |
 | [kimi-computer-use](./recipes/kimi-computer-use/) | 桌面 computer-use agent | stdio → 桥 | **Cloudflare Access，零代码** | Cloudflare Tunnel |
 | [devspace](./recipes/devspace/) | 本地代码工作区——文件、搜索、shell | 原生 HTTP | 自带 | **Cloudflare Tunnel（Tailscale Funnel 备选）** |
 | [webcodex](./recipes/webcodex/) | 项目工具 + 控制台，跑在 WSL 的 Docker 里 | 原生 HTTP | 自带 | Tunnel，本地 YAML |
 | [unreal-engine](./recipes/unreal-engine/) | 虚幻编辑器——Actor、蓝图、材质、Niagara、Sequencer | 原生 HTTP，**Epic 自己的编辑器内服务** | 本地 gateway | Cloudflare Tunnel |
 | [mcpx](./recipes/mcpx/) | **MCP Runtime**——Workspace、持久会话、Skill、上游 MCP 聚合 | 原生 HTTP | 自带 | Cloudflare Tunnel |
 
-**这种差异本身就是重点。** 十一条 recipe 之间覆盖了**四种做 OAuth 的方式**——从一行代码都不写，到自己跑一个 gateway——以及多种公网暴露形态：Cloudflare Tunnel、Worker 自定义域名等当前部署路径，同时保留 Tailscale Funnel 作为没有域名或不使用 Cloudflare 时的备选。MCPX 又多出了一层架构选择：让 ChatGPT 直接连接叶子 MCP，还是在前面放一个 Runtime，统一承载会变化的一组本地能力。想选路线看 [`docs/architecture.md`](./docs/architecture.md)，想横向对比看 [`recipes/`](./recipes/)。
+**这种差异本身就是重点。** 十二条 recipe 之间覆盖了**四种做 OAuth 的方式**——从一行代码都不写，到自己跑一个 gateway——以及多种公网暴露形态：Cloudflare Tunnel、Worker 自定义域名等当前部署路径，同时保留 Tailscale Funnel 作为没有域名或不使用 Cloudflare 时的备选。MCPX 又多出了一层架构选择：让 ChatGPT 直接连接叶子 MCP，还是在前面放一个 Runtime，统一承载会变化的一组本地能力。想选路线看 [`docs/architecture.md`](./docs/architecture.md)，想横向对比看 [`recipes/`](./recipes/)。
 
 ## 仓库里有什么
 
 ```text
-recipes/     十一条验证过的完整路径，其中一条是 Runtime 聚合路径
+recipes/     十二条验证过的完整路径，其中一条是 Runtime 聚合路径
 templates/   oauth-gateway/  — 给任意 HTTP MCP 套上 OAuth 2.1
              supervisor/     — 让这些进程在重启后还活着
 scripts/     doctor.mjs      — 分层连通性自检，零依赖
@@ -113,7 +116,7 @@ git clone https://github.com/yoruuuchan/chatgpt-mcp-connect.git ~/.agents/skills
 
 **它不是**：MCP 框架、要装的代理、托管服务、沙箱。它不 fork 也不包装任何上游 MCP——每条 recipe 都指向真正的原项目，只告诉你怎么配。它也**不限制**通过认证之后的调用方能做什么——暴露任何东西之前先读 [`docs/security.md`](./docs/security.md)，尤其是「把你不需要的工具关掉」那一段。
 
-最初一批桌面 recipe 验证于 **2026-08-18**，Unreal 是 **2026-08-19**，麦当劳公网托管 + 边缘 OAuth 路径和 MCPX Runtime 是 **2026-08-21**，QQ 邮箱则于 **2026-09-05** 在常驻 Linux 云主机上验证。DevSpace 的公网暴露层于 **2026-09-09** 从 Tailscale Funnel 迁移到 Cloudflare Tunnel；原 Funnel 路径作为历史实测和备选方案保留。每条 recipe 都写明了当天实测了什么、没实测什么——验证时应用本身没开着的，recipe 里就直说，不含糊过去。
+最初一批桌面 recipe 验证于 **2026-08-18**，Unreal 是 **2026-08-19**，麦当劳公网托管 + 边缘 OAuth 路径和 MCPX Runtime 是 **2026-08-21**，QQ 邮箱于 **2026-09-05** 在常驻 Linux 云主机上验证，Listening Bridge 的手机主动出站 WebSocket 路径则于 **2026-09-11** 在 vivo 真机上验证。DevSpace 的公网暴露层于 **2026-09-09** 从 Tailscale Funnel 迁移到 Cloudflare Tunnel；原 Funnel 路径作为历史实测和备选方案保留。每条 recipe 都写明了当天实测了什么、没实测什么——验证时应用本身没开着的，recipe 里就直说，不含糊过去。
 
 ## 上游致谢
 
@@ -134,6 +137,7 @@ git clone https://github.com/yoruuuchan/chatgpt-mcp-connect.git ~/.agents/skills
 | [modelcontextprotocol/typescript-sdk](https://github.com/modelcontextprotocol/typescript-sdk) | Apache-2.0 / MIT / CC-BY-4.0 | OAuth 路由和 Bearer 校验 |
 | [cloudflare/workers-oauth-provider](https://github.com/cloudflare/workers-oauth-provider) | MIT | ComfyUI 和麦当劳 recipe 的边缘 OAuth |
 | [麦当劳中国 MCP](https://open.mcd.cn/mcp/doc) | 官方托管服务，非开源 | 麦当劳 recipe 使用的官方 MCP |
+| [yoruuuchan/listening-bridge](https://github.com/yoruuuchan/listening-bridge) | MIT | Android → 主动出站 WebSocket → 云端 MCP recipe |
 | [EpicGames/unreal-engine-skills-for-claude-code-plugin](https://github.com/EpicGames/unreal-engine-skills-for-claude-code-plugin) | MIT | 虚幻引擎 agent skill |
 | Unreal MCP（`ModelContextProtocol`） | 随虚幻 5.8 一起发布，UE EULA | 虚幻引擎 |
 | Moonshot Kimi CU | 闭源，未找到公开条款 | computer-use recipe——只链接，不分发任何文件 |

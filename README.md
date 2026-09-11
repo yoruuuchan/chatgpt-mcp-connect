@@ -2,7 +2,7 @@
 
 **Reproducible recipes for connecting local and remote MCP servers to ChatGPT.**
 
-Your MCP server already works in Claude Code or Cursor. ChatGPT can't see it. This repo is the last mile — eleven paths that were actually built, run, and verified end to end, written down so you don't spend an afternoon rediscovering them.
+Your MCP server already works in Claude Code or Cursor. ChatGPT can't see it. This repo is the last mile — twelve paths that were actually built, run, and verified end to end, written down so you don't spend an afternoon rediscovering them.
 
 [中文说明](./README.zh-CN.md) · [Architecture](./docs/architecture.md) · [Security](./docs/security.md) · [Troubleshooting](./docs/troubleshooting.md)
 
@@ -43,7 +43,9 @@ cd chatgpt-mcp-connect
 
 If the upstream is **already hosted on public HTTPS** but only gives you a static Bearer/API token, do not tunnel it back through your workstation. Use [`recipes/mcdonalds`](./recipes/mcdonalds/) as the reference shape: a Cloudflare Worker provides ChatGPT-compatible OAuth at the edge and swaps the OAuth bearer for the upstream token.
 
-**2. Follow the closest recipe.** Even if your MCP server isn't one of the eleven, one of them has your shape.
+If the data source is a **mobile device that must stay reachable while roaming or sleeping away from your workstation**, use [`recipes/listening-bridge`](./recipes/listening-bridge/): the device keeps one outbound persistent WebSocket to a hosted MCP service, while ChatGPT reaches that hosted service through OAuth over public HTTPS.
+
+**2. Follow the closest recipe.** Even if your MCP server isn't one of the twelve, one of them has your shape.
 
 **3. Check your work before touching ChatGPT.**
 
@@ -73,6 +75,7 @@ Each was built and verified on real hardware. Each records what was tested, what
 | [qq-mail-mcp](./recipes/qq-mail-mcp/) | QQ Mail over IMAP/SMTP — search, read, threads, attachments, draft, reply, send | stdio → bridge | local gateway | Cloudflare Tunnel on an always-on cloud host |
 | [comfyui](./recipes/comfyui/) | ComfyUI workflows and generation | HTTP native | **Cloudflare Worker** | Worker + Tunnel |
 | [mcdonalds](./recipes/mcdonalds/) | McDonald's China official hosted MCP — account, coupons, menu, orders | hosted Streamable HTTP | **Cloudflare Worker OAuth facade** | **Worker custom domain, no Tunnel** |
+| [listening-bridge](./recipes/listening-bridge/) | Android media-session metadata and playback controls via an outbound phone WebSocket | hosted Streamable HTTP | local gateway on the host | Cloudflare Tunnel; separate HTTPS/WSS hostnames |
 | [kimi-computer-use](./recipes/kimi-computer-use/) | Desktop computer-use agent | stdio → bridge | **Cloudflare Access, zero code** | Cloudflare Tunnel |
 | [devspace](./recipes/devspace/) | Local coding workspace — files, search, shell | HTTP native | built in | **Cloudflare Tunnel (Tailscale Funnel alternative)** |
 | [webcodex](./recipes/webcodex/) | Project tools + console, in Docker on WSL | HTTP native | built in | Tunnel, local YAML |
@@ -84,7 +87,7 @@ The variety is the point. Between them they cover **four ways to do OAuth** — 
 ## What's in here
 
 ```text
-recipes/     eleven verified end-to-end paths, including a runtime aggregation path
+recipes/     twelve verified end-to-end paths, including a runtime aggregation path
 templates/   oauth-gateway/  — OAuth 2.1 in front of any HTTP MCP server
              supervisor/     — keep the processes alive across reboots
 scripts/     doctor.mjs      — layered connectivity check, no dependencies
@@ -113,7 +116,7 @@ Then add one line to your global `CLAUDE.md` or `AGENTS.md`:
 
 **This is not** an MCP framework, a proxy to install, a hosted service, or a sandbox. It doesn't fork or wrap any upstream MCP server — every recipe points at the real project and tells you how to configure it. And it does not constrain what an authenticated caller can do; read [`docs/security.md`](./docs/security.md) before you expose anything, especially the part about turning off the tools you don't need.
 
-The original workstation recipes were verified on **2026-08-18**, Unreal on **2026-08-19**, the hosted McDonald's edge-OAuth recipe and MCPX runtime on **2026-08-21**, and QQ Mail on an always-on Linux cloud host on **2026-09-05**. DevSpace's public exposure layer moved from Tailscale Funnel to Cloudflare Tunnel on **2026-09-09**; the Funnel path remains documented as a previously tested alternative. Each recipe states what was live-checked on that date and what wasn't — where an application wasn't running at verification time, the recipe says so rather than implying more coverage than it has.
+The original workstation recipes were verified on **2026-08-18**, Unreal on **2026-08-19**, the hosted McDonald's edge-OAuth recipe and MCPX runtime on **2026-08-21**, QQ Mail on an always-on Linux cloud host on **2026-09-05**, and Listening Bridge's mobile outbound-WebSocket path on a vivo phone on **2026-09-11**. DevSpace's public exposure layer moved from Tailscale Funnel to Cloudflare Tunnel on **2026-09-09**; the Funnel path remains documented as a previously tested alternative. Each recipe states what was live-checked on that date and what wasn't — where an application wasn't running at verification time, the recipe says so rather than implying more coverage than it has.
 
 ## Attribution
 
@@ -134,6 +137,7 @@ Every MCP server here belongs to someone else. This repo links to them; it copie
 | [modelcontextprotocol/typescript-sdk](https://github.com/modelcontextprotocol/typescript-sdk) | Apache-2.0 / MIT / CC-BY-4.0 | OAuth router and bearer validation |
 | [cloudflare/workers-oauth-provider](https://github.com/cloudflare/workers-oauth-provider) | MIT | edge OAuth in the ComfyUI and McDonald's recipes |
 | [McDonald's China MCP](https://open.mcd.cn/mcp/doc) | proprietary hosted service | official hosted MCP used by the McDonald's recipe |
+| [yoruuuchan/listening-bridge](https://github.com/yoruuuchan/listening-bridge) | MIT | Android → outbound WebSocket → hosted MCP recipe |
 | [EpicGames/unreal-engine-skills-for-claude-code-plugin](https://github.com/EpicGames/unreal-engine-skills-for-claude-code-plugin) | MIT | Unreal Engine agent skills |
 | Unreal MCP (`ModelContextProtocol`) | ships with Unreal Engine 5.8, UE EULA | Unreal Engine |
 | Moonshot Kimi CU | proprietary, no public terms found | computer-use recipe — link only, nothing redistributed |
