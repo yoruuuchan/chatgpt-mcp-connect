@@ -206,3 +206,88 @@ Re-verify these at implementation time rather than trusting any document, includ
 - MCP authorization spec details
 
 The core requirements — public HTTPS, Streamable HTTP, and OAuth 2.1 — have been stable. The exposure layer may be a tunnel, Funnel, or pure edge Worker depending on where the upstream actually runs. The product surface on top of it has not.
+
+---
+
+## Network environment
+
+### cloudflared fails DNS resolution with `lookup argotunnel.com: no such host`
+
+A local DNS interceptor (xray TUN mode, Clash TUN mode, or similar) hijacks system DNS, but `cloudflared` is a Go binary. Go's DNS resolver **does not read the Windows hosts file** and does not use the system resolver for SRV queries. Result: `argotunnel.com` is unresolvable, and the tunnel precheck fails entirely.
+
+**Diagnosis**: `cloudflared tunnel run` starts, precheck shows all FAIL, logs contain `lookup argotunnel.com: no such host`.
+
+**Fixes**:
+- Cleanest: **do not run TUN mode** on the machine running cloudflared. Regular proxy mode (non-TUN) does not affect this.
+- Alternative: run cloudflared on a machine without TUN (e.g., a cloud server), then connect back to the local machine via SSH reverse tunnel.
+- Adding edge IPs to the hosts file **only works for the system resolver**, not for Go binaries. Do not waste time on this.
+
+### Named tunnel returns 1016/530 errors even though tunnel is healthy
+
+The tunnel shows 4 connections, SSH is working, localhost is reachable, but requests never reach cloudflared (no request logs). This is likely an API token permission issue or Cloudflare edge routing problem.
+
+**Fallback**: use a Quick Tunnel (`cloudflared tunnel --url http://localhost:PORT`) to get a temporary URL, then put a Cloudflare Worker in front as a reverse proxy bound to a stable domain:
+
+```
+Stable domain (mcp.example.com)
+  ↓ Cloudflare Worker (reverse proxy)
+Quick tunnel URL (xxx-xxx-xxx.trycloudflare.com)
+  ↓
+cloudflared quick tunnel
+  ↓
+local bridge
+```
+
+**Caveat**: the quick tunnel URL changes when cloudflared restarts. You must manually update the Worker's target URL. This is suitable for temporary setups or as an emergency fallback when named tunnels fail.
+
+### Local machine is behind NAT and cannot run cloudflared directly
+
+When the local machine is behind NAT and cannot accept inbound connections (DNS hijacked, no public IP, etc.), use a cloud server with a public IP as a jump host:
+
+```bash
+# Local → Cloud server: map local port 3399 to cloud server's 127.0.0.1:3399
+ssh -R 3399:127.0.0.1:3399 -N -o ServerAliveInterval=60 admin@cloud-server
+```
+
+Then run cloudflared on the cloud server with `--url http://localhost:3399`. Traffic path:
+
+```
+ChatGPT → CF edge → cloudflared (cloud server) → SSH tunnel → local bridge
+```
+
+**Key points**:
+- Use `-N` (no remote command) and `-o ServerAliveInterval=60` (keepalive).
+- Cloud server sshd should have `GatewayPorts no` (default), ensuring port 3399 binds only to 127.0.0.1.
+- For auto-reconnect on disconnect, use `autossh` or a systemd service.
+
+### stdio-only MCP server needs a minimal HTTP bridge
+
+Many MCP servers only ship with stdio transport. ChatGPT requires Streamable HTTP. You can write a minimal bridge — **no MCP SDK Server layer needed**, just pure JSON-RPC forwarding:
+
+```
+HTTP POST /mcp  →  read JSON-RPC body  →  write to child process stdin
+child process stdout  →  parse JSON-RPC response  →  HTTP response
+```
+
+Key implementation points:
+- **Child process management**: spawn once, keep alive. stdin/stdout use JSON lines protocol.
+- **Session ID**: extract from `mcp-session-id` header, maintain session→child mapping, 30-minute TTL cleanup.
+- **Start child on initialize**, kill on session expiry.
+- **stdout parsing**: MCP's stdio transport uses Content-Length header framing (like LSP), not pure JSON lines.
+- **OAuth and MCP endpoint in the same Express service** reduces deployment complexity.
+
+Alternatively, use `mcp-proxy` (mentioned earlier) for a ready-made solution.
+
+---
+
+## ChatGPT-specific OAuth details
+
+### CIMD (Custom Identity / Managed Discovery) pitfalls
+
+ChatGPT's OAuth flow has several easy-to-miss requirements:
+
+- **redirect_uri must match exactly**: The `redirect_uri` registered in OAuth DCR must match character-for-character what ChatGPT actually uses. Otherwise the authorization endpoint rejects it immediately.
+- **OAuth metadata endpoints must return `no-store`**: Responses from `/.well-known/oauth-protected-resource` and `/.well-known/oauth-authorization-server` must include `Cache-Control: no-store`. Otherwise ChatGPT caches stale metadata.
+- **PUBLIC_URL must be the public address**: The OAuth metadata returned by your bridge must contain publicly accessible URLs (e.g., `https://mcp.example.com`), not `localhost:3399`.
+- **WWW-Authenticate header format**: 401 responses must return `WWW-Authenticate: Bearer realm="mcp"`. ChatGPT uses this header to trigger the OAuth flow. Without it, ChatGPT will not proceed to authorization.
+- **302 redirects are unreliable**: Do not return 302 from the authorization endpoint. Return an HTML page or JSON directly. ChatGPT's HTTP client handles 302 inconsistently.
