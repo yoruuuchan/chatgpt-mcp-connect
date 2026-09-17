@@ -1,14 +1,15 @@
 # Recipes
 
-Twelve paths that were actually built and run. Pick the one whose *shape* matches yours — the specific application matters much less than whether your server speaks HTTP, whether it is already hosted publicly, where OAuth should happen, and whether ChatGPT should connect to the leaf server directly or to an MCP runtime in front of several capabilities.
+Thirteen paths that were actually built and run. Pick the one whose *shape* matches yours — the specific application matters much less than whether your server speaks HTTP, whether it is already hosted publicly, where OAuth should happen, and whether ChatGPT should connect to the leaf server directly or to an MCP runtime in front of several capabilities.
 
 ## Pick by shape
 
 | If your MCP server… | Start from |
 |---|---|
 | is really a **set of Workspaces, Skills, or upstream MCP servers** you want behind one connector | [mcpx](./mcpx/) — use an MCP runtime / aggregation layer |
+| [aftereffects](./aftereffects/) | [kumoproductions/mcp-aftereffects](https://github.com/kumoproductions/mcp-aftereffects) | v0.2.0 | FileIpcTransport + stdio | custom Express bridge | built-in OAuth 2.1 | CF Quick Tunnel + Worker + SSH reverse tunnel |
 | already speaks Streamable HTTP, has no auth | [davinci-resolve](./davinci-resolve/) — the canonical direct path |
-| is stdio only | [blender](./blender/), [kimi-computer-use](./kimi-computer-use/), or [qq-mail-mcp](./qq-mail-mcp/) — each adds a bridge first |
+| is stdio only | [blender](./blender/), [kimi-computer-use](./kimi-computer-use/), [qq-mail-mcp](./qq-mail-mcp/), or [aftereffects](./aftereffects/) — each adds a bridge first |
 | already has its own OAuth | [devspace](./devspace/) or [webcodex](./webcodex/) — you only need to expose it |
 | should stay reachable while the workstation sleeps | [comfyui](./comfyui/) — OAuth at the edge, in a Worker |
 | is already hosted on public HTTPS but only has static Bearer/API-key auth | [mcdonalds](./mcdonalds/) — OAuth facade at the edge, no workstation or Tunnel |
@@ -34,6 +35,7 @@ Twelve paths that were actually built and run. Pick the one whose *shape* matche
 | [devspace](./devspace/) | [Waishnav/devspace](https://github.com/Waishnav/devspace) | MIT | HTTP native | — | built in | **CF Tunnel (current); Tailscale Funnel documented alternative** |
 | [webcodex](./webcodex/) | [yyjeqhc/webcodex](https://github.com/yyjeqhc/webcodex) | Apache-2.0 | HTTP native | — | built in | CF Tunnel, local YAML |
 | [mcpx](./mcpx/) | [opentokenz/mcpx](https://github.com/opentokenz/mcpx) | Apache-2.0 | HTTP native | — | built in | CF Tunnel; aggregates Workspaces / Skills / upstream MCPs |
+| [aftereffects](./aftereffects/) | [kumoproductions/mcp-aftereffects](https://github.com/kumoproductions/mcp-aftereffects) | v0.2.0 | FileIpcTransport + stdio | custom Express bridge | built-in OAuth 2.1 | CF Quick Tunnel + Worker + SSH reverse tunnel |
 
 ## Direct leaf server or runtime?
 

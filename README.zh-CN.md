@@ -2,7 +2,7 @@
 
 **把本地和远程 MCP Server 接进 ChatGPT 的可复现配方。**
 
-你的 MCP 在 Claude Code 或 Cursor 里跑得好好的，ChatGPT 就是看不见它。这个仓库解决的就是这最后一公里——十二条真正搭起来、跑通、验证过的路径，写下来，省得你再花一个下午重新踩一遍。
+你的 MCP 在 Claude Code 或 Cursor 里跑得好好的，ChatGPT 就是看不见它。这个仓库解决的就是这最后一公里——十三条真正搭起来、跑通、验证过的路径，写下来，省得你再花一个下午重新踩一遍。
 
 [English](./README.md) · [架构](./docs/architecture.md) · [安全](./docs/security.md) · [排错](./docs/troubleshooting.md)
 
@@ -45,7 +45,7 @@ cd chatgpt-mcp-connect
 
 如果数据源是**需要在移动网络、离开电脑后仍保持可达的手机设备**，参考 [`recipes/listening-bridge`](./recipes/listening-bridge/)：手机只维持一条主动出站的持久 WebSocket 到常驻服务器，ChatGPT 通过公网 HTTPS + OAuth 访问服务器上的 MCP。
 
-**2. 照最接近的那条 recipe 做。** 就算你的 MCP 不在这十二个里面，总有一个跟你形状一样。
+**2. 照最接近的那条 recipe 做。** 就算你的 MCP 不在这十三个里面，总有一个跟你形状一样。
 
 **3. 碰 ChatGPT 之前先自检。**
 
@@ -63,7 +63,7 @@ node scripts/doctor.mjs --url https://mcp.example.com --upstream 127.0.0.1:8770 
 
 像 MCPX 这种自带 OAuth 的 server，不传 `--gateway`，把 `--upstream` 直接指向 MCPX 自己即可。
 
-## 十二条 recipe
+## 十三条 recipe
 
 每一条都在真机上搭过、跑过。每一条都写清楚了验证了什么、没验证什么、什么时候验证的。
 
@@ -82,12 +82,12 @@ node scripts/doctor.mjs --url https://mcp.example.com --upstream 127.0.0.1:8770 
 | [unreal-engine](./recipes/unreal-engine/) | 虚幻编辑器——Actor、蓝图、材质、Niagara、Sequencer | 原生 HTTP，**Epic 自己的编辑器内服务** | 本地 gateway | Cloudflare Tunnel |
 | [mcpx](./recipes/mcpx/) | **MCP Runtime**——Workspace、持久会话、Skill、上游 MCP 聚合 | 原生 HTTP | 自带 | Cloudflare Tunnel |
 
-**这种差异本身就是重点。** 十二条 recipe 之间覆盖了**四种做 OAuth 的方式**——从一行代码都不写，到自己跑一个 gateway——以及多种公网暴露形态：Cloudflare Tunnel、Worker 自定义域名等当前部署路径，同时保留 Tailscale Funnel 作为没有域名或不使用 Cloudflare 时的备选。MCPX 又多出了一层架构选择：让 ChatGPT 直接连接叶子 MCP，还是在前面放一个 Runtime，统一承载会变化的一组本地能力。想选路线看 [`docs/architecture.md`](./docs/architecture.md)，想横向对比看 [`recipes/`](./recipes/)。
+**这种差异本身就是重点。** 十三条 recipe 之间覆盖了**四种做 OAuth 的方式**——从一行代码都不写，到自己跑一个 gateway——以及多种公网暴露形态：Cloudflare Tunnel、Worker 自定义域名等当前部署路径，同时保留 Tailscale Funnel 作为没有域名或不使用 Cloudflare 时的备选。MCPX 又多出了一层架构选择：让 ChatGPT 直接连接叶子 MCP，还是在前面放一个 Runtime，统一承载会变化的一组本地能力。想选路线看 [`docs/architecture.md`](./docs/architecture.md)，想横向对比看 [`recipes/`](./recipes/)。
 
 ## 仓库里有什么
 
 ```text
-recipes/     十二条验证过的完整路径，其中一条是 Runtime 聚合路径
+recipes/     十三条验证过的完整路径，其中一条是 Runtime 聚合路径
 templates/   oauth-gateway/  — 给任意 HTTP MCP 套上 OAuth 2.1
              supervisor/     — 让这些进程在重启后还活着
 scripts/     doctor.mjs      — 分层连通性自检，零依赖

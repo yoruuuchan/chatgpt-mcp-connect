@@ -2,7 +2,7 @@
 
 **Reproducible recipes for connecting local and remote MCP servers to ChatGPT.**
 
-Your MCP server already works in Claude Code or Cursor. ChatGPT can't see it. This repo is the last mile — twelve paths that were actually built, run, and verified end to end, written down so you don't spend an afternoon rediscovering them.
+Your MCP server already works in Claude Code or Cursor. ChatGPT can't see it. This repo is the last mile — thirteen paths that were actually built, run, and verified end to end, written down so you don't spend an afternoon rediscovering them.
 
 [中文说明](./README.zh-CN.md) · [Architecture](./docs/architecture.md) · [Security](./docs/security.md) · [Troubleshooting](./docs/troubleshooting.md)
 
@@ -45,7 +45,7 @@ If the upstream is **already hosted on public HTTPS** but only gives you a stati
 
 If the data source is a **mobile device that must stay reachable while roaming or sleeping away from your workstation**, use [`recipes/listening-bridge`](./recipes/listening-bridge/): the device keeps one outbound persistent WebSocket to a hosted MCP service, while ChatGPT reaches that hosted service through OAuth over public HTTPS.
 
-**2. Follow the closest recipe.** Even if your MCP server isn't one of the twelve, one of them has your shape.
+**2. Follow the closest recipe.** Even if your MCP server isn't one of thirteen, one of them has your shape.
 
 **3. Check your work before touching ChatGPT.**
 
@@ -87,7 +87,7 @@ The variety is the point. Between them they cover **four ways to do OAuth** — 
 ## What's in here
 
 ```text
-recipes/     twelve verified end-to-end paths, including a runtime aggregation path
+recipes/     thirteen verified end-to-end paths, including a runtime aggregation path
 templates/   oauth-gateway/  — OAuth 2.1 in front of any HTTP MCP server
              supervisor/     — keep the processes alive across reboots
 scripts/     doctor.mjs      — layered connectivity check, no dependencies
