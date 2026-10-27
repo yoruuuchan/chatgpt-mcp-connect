@@ -197,7 +197,10 @@ function anchorsOf(rel) {
     }
     if (fence) continue;
 
-    const heading = /^ {0,3}#{1,6}\s+(.*)$/.exec(line);
+    // [\s\S] instead of . so a CRLF checkout's trailing \r is consumed by the
+    // match instead of being dropped by the capture (where it would leak into
+    // the slug and break every anchor on Windows).
+    const heading = /^ {0,3}#{1,6}\s+([\s\S]*)$/.exec(line);
     if (heading) {
       const base = slug(inlineText(heading[1].replace(/\s+#+\s*$/, '')));
       const seen = counts.get(base) ?? 0;
