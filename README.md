@@ -81,6 +81,7 @@ Each one was built and verified on real hardware. Each one records what was test
 | [webcodex](./recipes/webcodex/) | Project tools + console, in Docker on WSL | HTTP native | built in | Tunnel, local YAML |
 | [unreal-engine](./recipes/unreal-engine/) | Unreal Editor: actors, Blueprints, materials, Niagara, Sequencer | HTTP native, Epic's own in-editor server | local gateway | Cloudflare Tunnel |
 | [mcpx](./recipes/mcpx/) | MCP runtime: Workspaces, persistent sessions, Skills, upstream MCP aggregation | HTTP native | built in | Cloudflare Tunnel |
+| [aftereffects](./recipes/aftereffects/) | After Effects: compositions, layers, frame renders, project edits | stdio → bridge, file IPC to AE | built into the bridge (OAuth 2.1) | Worker + Quick Tunnel + SSH reverse tunnel |
 
 The variety is the point. Between them they cover four ways to do OAuth, from writing nothing at all to running your own gateway. They also cover several ways to go public: Cloudflare Tunnel, Worker custom domains, and Tailscale Funnel as an alternative when you don't have a Cloudflare-managed domain. MCPX adds a second architectural choice on top: connect ChatGPT directly to a leaf MCP, or put an MCP runtime in front of a changing set of local capabilities. To pick one, read [`docs/architecture.md`](./docs/architecture.md). For the full comparison, see [`recipes/`](./recipes/).
 
@@ -125,6 +126,7 @@ When each recipe was verified:
 - Hosted McDonald's edge-OAuth recipe and MCPX runtime: 2026-08-21
 - QQ Mail, on an always-on Linux cloud host: 2026-09-05
 - Listening Bridge's mobile outbound-WebSocket path, on a vivo phone: 2026-09-11
+- After Effects: bridge, OAuth and public endpoint on 2026-09-17; tool calls confirmed working after that
 
 On 2026-09-09, DevSpace's public exposure layer moved from Tailscale Funnel to Cloudflare Tunnel. The Funnel path stays documented as a previously tested alternative.
 
@@ -141,6 +143,7 @@ Every MCP server here belongs to someone else. This repo links to them. It copie
 | [ahujasid/blender-mcp](https://github.com/ahujasid/blender-mcp) | MIT | Blender |
 | [honest-magic/mail-mcp](https://github.com/honest-magic/mail-mcp) | MIT | QQ Mail over IMAP/SMTP |
 | [artokun/comfyui-mcp](https://github.com/artokun/comfyui-mcp) | MIT | ComfyUI |
+| [kumoproductions/mcp-aftereffects](https://github.com/kumoproductions/mcp-aftereffects) | MIT | After Effects |
 | [Waishnav/devspace](https://github.com/Waishnav/devspace) | MIT | DevSpace, and `SingleUserOAuthProvider` used by the gateway template |
 | [yyjeqhc/webcodex](https://github.com/yyjeqhc/webcodex) | Apache-2.0 | WebCodex |
 | [opentokenz/mcpx](https://github.com/opentokenz/mcpx) | Apache-2.0 | MCP runtime / aggregation recipe |

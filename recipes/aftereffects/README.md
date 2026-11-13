@@ -8,7 +8,7 @@
 | **Transport** | FileIpcTransport (file-based IPC to AE) + stdio (MCP protocol) — requires a custom Streamable HTTP bridge |
 | **Auth** | Built-in OAuth 2.1 in the bridge (single-user, PKCE + DCR) |
 | **Exposure** | Cloudflare Quick Tunnel + Worker reverse proxy + SSH reverse tunnel |
-| **Status** | 2026-09-17 — Bridge, OAuth, and public endpoint verified. 11 AE tools discoverable via ChatGPT. End-to-end tool call pending (requires AE running with "Allow Scripts to Write Files and Access Network" enabled). |
+| **Status** | 2026-09-17 — Bridge, OAuth, and public endpoint verified. 11 AE tools discoverable via ChatGPT. End-to-end tool calls were confirmed working after that (AE must be running with "Allow Scripts to Write Files and Access Network" enabled). |
 
 ## What this is
 

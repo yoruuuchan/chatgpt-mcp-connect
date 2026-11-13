@@ -81,6 +81,7 @@ node scripts/doctor.mjs --url https://mcp.example.com --upstream 127.0.0.1:8770 
 | [webcodex](./recipes/webcodex/) | 项目工具 + 控制台，跑在 WSL 的 Docker 里 | 原生 HTTP | 自带 | Tunnel，本地 YAML |
 | [unreal-engine](./recipes/unreal-engine/) | 虚幻编辑器：Actor、蓝图、材质、Niagara、Sequencer | 原生 HTTP，Epic 自己的编辑器内服务 | 本地网关 | Cloudflare Tunnel |
 | [mcpx](./recipes/mcpx/) | MCP Runtime：Workspace、持久会话、Skill、上游 MCP 聚合 | 原生 HTTP | 自带 | Cloudflare Tunnel |
+| [aftereffects](./recipes/aftereffects/) | After Effects：合成、图层、渲染单帧、改工程 | stdio → 桥，桥再用文件 IPC 连 AE | 桥里自带（OAuth 2.1） | Worker + Quick Tunnel + SSH 反向隧道 |
 
 差异本身就是重点。这十三条配方加起来，覆盖了四种做 OAuth 的方式，从一行代码都不写，到自己跑一个网关。公网暴露也有好几种：现在部署用的是 Cloudflare Tunnel、Worker 自定义域名等；没有域名或不用 Cloudflare 的时候，还保留了 Tailscale Funnel 作为备选。MCPX 又多了一层架构选择：让 ChatGPT 直接连叶子 MCP，还是在前面放一个 Runtime，统一承载会变化的一组本地能力。想选路线看 [`docs/architecture.md`](./docs/architecture.md)，想横向对比看 [`recipes/`](./recipes/)。
 
@@ -125,6 +126,7 @@ git clone https://github.com/yoruuuchan/chatgpt-mcp-connect.git ~/.agents/skills
 - 麦当劳公网托管 + 边缘 OAuth 路径、MCPX Runtime：2026-08-21
 - QQ 邮箱，在常驻 Linux 云主机上：2026-09-05
 - Listening Bridge 的手机主动出站 WebSocket 路径，在 vivo 真机上：2026-09-11
+- After Effects：桥、OAuth 和公网地址 2026-09-17 验证；之后实测工具调用也正常
 
 2026-09-09，DevSpace 的公网暴露层从 Tailscale Funnel 迁到了 Cloudflare Tunnel。原来的 Funnel 路径作为实测过的备选方案留在文档里。
 
@@ -141,6 +143,7 @@ git clone https://github.com/yoruuuchan/chatgpt-mcp-connect.git ~/.agents/skills
 | [ahujasid/blender-mcp](https://github.com/ahujasid/blender-mcp) | MIT | Blender |
 | [honest-magic/mail-mcp](https://github.com/honest-magic/mail-mcp) | MIT | QQ 邮箱 IMAP/SMTP |
 | [artokun/comfyui-mcp](https://github.com/artokun/comfyui-mcp) | MIT | ComfyUI |
+| [kumoproductions/mcp-aftereffects](https://github.com/kumoproductions/mcp-aftereffects) | MIT | After Effects |
 | [Waishnav/devspace](https://github.com/Waishnav/devspace) | MIT | DevSpace，以及 gateway 模板复用的 `SingleUserOAuthProvider` |
 | [yyjeqhc/webcodex](https://github.com/yyjeqhc/webcodex) | Apache-2.0 | WebCodex |
 | [opentokenz/mcpx](https://github.com/opentokenz/mcpx) | Apache-2.0 | MCP Runtime / 聚合配方 |
