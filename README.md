@@ -8,6 +8,8 @@ Your MCP server already works in Claude Code or Cursor. ChatGPT can't see it. Th
 
 ---
 
+**Contents:** [Why this exists](#why-this-exists) · [Start here](#start-here) · [Recipes](#recipes) · [What's in here](#whats-in-here) · [Use it as a skill](#use-it-as-an-agent-skill) · [Scope](#scope) · [Attribution](#attribution)
+
 ## Why this exists
 
 ChatGPT will not talk to your MCP server unless **all four** of these are true at once:
@@ -22,6 +24,23 @@ ChatGPT will not talk to your MCP server unless **all four** of these are true a
 Nothing in the MCP ecosystem hands you those four. Every guide stops at "your server works locally". The gap between that and a working ChatGPT connector is where the afternoon goes. The protocol is documented; the assembly is not.
 
 So this is the assembly: which piece goes where, what breaks, and how to tell which layer broke.
+
+```mermaid
+flowchart TD
+    A["Your MCP server"] --> B{"Streamable HTTP?"}
+    B -- "stdio only" --> C["Add mcp-proxy bridge"]
+    B -- yes --> D{"OAuth 2.1 built in?"}
+    C --> D
+    D -- no --> E["OAuth gateway or Cloudflare Worker"]
+    D -- yes --> F["Expose the server"]
+    E --> G{"Public HTTPS hostname?"}
+    F --> G
+    G -- no --> H["Cloudflare Tunnel or Tailscale Funnel"]
+    G -- yes --> I["Connect from ChatGPT"]
+    H --> I
+```
+
+The full decision record is in [docs/architecture.md](./docs/architecture.md).
 
 ## Start here
 
@@ -121,12 +140,14 @@ It also does **not** constrain what an authenticated caller can do. Read [`docs/
 
 When each recipe was verified:
 
-- Original workstation recipes: 2026-08-18
-- Unreal: 2026-08-19
-- Hosted McDonald's edge-OAuth recipe and MCPX runtime: 2026-08-21
-- QQ Mail, on an always-on Linux cloud host: 2026-09-05
-- Listening Bridge's mobile outbound-WebSocket path, on a vivo phone: 2026-09-11
-- After Effects: bridge, OAuth and public endpoint on 2026-09-17; tool calls confirmed working after that
+| Recipe | Verified |
+|---|---|
+| Original workstation recipes (Resolve, Windows, Blender, ComfyUI, Kimi, DevSpace, WebCodex) | 2026-08-18 |
+| Unreal | 2026-08-19 |
+| Hosted McDonald's edge-OAuth recipe and MCPX runtime | 2026-08-21 |
+| QQ Mail, on an always-on Linux cloud host | 2026-09-05 |
+| Listening Bridge's mobile outbound-WebSocket path, on a vivo phone | 2026-09-11 |
+| After Effects: bridge, OAuth and public endpoint | 2026-09-17; tool calls confirmed after that |
 
 On 2026-09-09, DevSpace's public exposure layer moved from Tailscale Funnel to Cloudflare Tunnel. The Funnel path stays documented as a previously tested alternative.
 
